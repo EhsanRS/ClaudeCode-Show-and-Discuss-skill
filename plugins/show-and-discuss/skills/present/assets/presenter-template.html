@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Replace with a 2–4 word name for the plan, e.g. "Settings Dark Mode". -->
+<title>Settings Dark Mode</title>
+<style>
+/* ── Design tokens ─────────────────────────────────────────────────────── */
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
+  --text: #1d1c1a;
+  --muted: #6b6760;
+  --border: #e2dfd8;
+  --accent: #c2410c;
+  --accent-soft: #fde7da;
+  --ok: #15803d;
+  --ok-soft: #dcfce7;
+  --warn: #a16207;
+  --warn-soft: #fef3c7;
+  --risk: #b91c1c;
+  --risk-soft: #fee2e2;
+  --code-bg: #1f2328;
+  --code-text: #e6edf3;
+  --scrim: rgba(20, 18, 15, 0.55);
+  --cursor-fill: #111111;
+  --cursor-stroke: #ffffff;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161514;
+    --surface: #1f1e1c;
+    --surface-2: #2a2826;
+    --text: #f2efe9;
+    --muted: #a9a49b;
+    --border: #3a3734;
+    --accent: #fb923c;
+    --accent-soft: #3b2417;
+    --ok: #4ade80;
+    --ok-soft: #13301f;
+    --warn: #facc15;
+    --warn-soft: #33290c;
+    --risk: #f87171;
+    --risk-soft: #3a1717;
+    --code-bg: #0d1117;
+    --scrim: rgba(0, 0, 0, 0.65);
+    --cursor-fill: #ffffff;
+    --cursor-stroke: #111111;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161514;
+  --surface: #1f1e1c;
+  --surface-2: #2a2826;
+  --text: #f2efe9;
+  --muted: #a9a49b;
+  --border: #3a3734;
+  --accent: #fb923c;
+  --accent-soft: #3b2417;
+  --ok: #4ade80;
+  --ok-soft: #13301f;
+  --warn: #facc15;
+  --warn-soft: #33290c;
+  --risk: #f87171;
+  --risk-soft: #3a1717;
+  --code-bg: #0d1117;
+  --scrim: rgba(0, 0, 0, 0.65);
+  --cursor-fill: #ffffff;
+  --cursor-stroke: #111111;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+h1, h2, h3 { line-height: 1.15; margin: 0 0 .5em; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 5vw, 3.4rem); }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2.3rem); }
+h3 { font-size: 1.1rem; }
+p { margin: 0 0 1em; }
+code { font-family: var(--mono); font-size: .9em; background: var(--surface-2); padding: .1em .35em; border-radius: 6px; }
+pre { margin: 0; background: var(--code-bg); color: var(--code-text); padding: 16px; border-radius: var(--radius); overflow-x: auto; font: 13.5px/1.55 var(--mono); }
+pre code { background: none; padding: 0; color: inherit; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+
+/* ── Deck & slides ───────────────────────────────────────────────────── */
+.deck { position: fixed; inset: 0 0 56px 0; }
+.slide {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: clamp(24px, 6vh, 64px) max(16px, calc((100vw - 1040px) / 2));
+  opacity: 0; visibility: hidden; transform: translateY(8px);
+  transition: opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
+  scroll-behavior: smooth;
+}
+.slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .35s ease, transform .35s ease; }
+.slide > .notes { display: none; }
+.kicker { color: var(--accent); font-weight: 600; font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: .6em; }
+.lead { font-size: clamp(1.05rem, 2vw, 1.3rem); color: var(--muted); max-width: 46em; }
+.title-slide { display: flex; flex-direction: column; justify-content: center; min-height: 100%; }
+.meta { color: var(--muted); font-size: .9rem; display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* ── Components ──────────────────────────────────────────────────────── */
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+.card h3 { margin-bottom: .35em; }
+.card p:last-child { margin-bottom: 0; }
+.pill { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.risk { background: var(--risk-soft); color: var(--risk); }
+.pill.accent { background: var(--accent-soft); color: var(--accent); }
+.callout { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; margin: 16px 0; }
+ul.clean { list-style: none; padding: 0; margin: 0; }
+ul.clean li { padding: 8px 0; border-bottom: 1px dashed var(--border); }
+ul.clean li:last-child { border-bottom: 0; }
+
+/* Ordered slices / steps */
+ol.steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 12px; }
+ol.steps > li { counter-increment: step; position: relative; padding: 14px 16px 14px 60px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+ol.steps > li::before { content: counter(step); position: absolute; left: 16px; top: 14px; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: .9rem; }
+ol.steps > li strong { display: block; }
+ol.steps > li span { color: var(--muted); font-size: .92rem; }
+
+/* Before/after comparison */
+.compare { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.compare > div > .label { font-size: .8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+
+/* Mock-up frame: wrap any HTML mock in .mock to get a browser-window chrome. */
+.mock { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+.mock-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.mock-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--border); display: inline-block; }
+.mock-bar .url { margin-left: 10px; flex: 1; background: var(--surface); border-radius: 6px; padding: 3px 10px; font: 12px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mock-body { padding: 20px; }
+
+/* Diagrams: inline SVG uses currentColor + these classes so it themes. */
+svg.diagram { width: 100%; height: auto; display: block; }
+svg.diagram .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+svg.diagram .box.hl { stroke: var(--accent); stroke-width: 2.5; }
+svg.diagram text { fill: var(--text); font: 14px var(--font); }
+svg.diagram .sub { fill: var(--muted); font-size: 12px; }
+svg.diagram .edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+svg.diagram .arrow { fill: var(--muted); }
+
+/* ── Presenter overlay ───────────────────────────────────────────────── */
+#pz-spot {
+  position: fixed; z-index: 40; pointer-events: none; border-radius: 10px;
+  box-shadow: 0 0 0 9999px var(--scrim);
+  outline: 3px solid var(--accent); outline-offset: 2px;
+  opacity: 0; transition: all .45s cubic-bezier(.2,.8,.2,1);
+}
+#pz-spot.on { opacity: 1; }
+.pz-hl { outline: 3px solid var(--accent) !important; outline-offset: 4px; border-radius: 8px; animation: pz-pulse 1.4s ease-in-out infinite; }
+@keyframes pz-pulse { 50% { outline-offset: 8px; outline-color: transparent; } }
+#pz-cursor {
+  position: fixed; z-index: 50; left: 0; top: 0; width: 28px; height: 28px; pointer-events: none;
+  transform: translate(-60px, -60px); transition: transform .7s cubic-bezier(.2,.8,.2,1), opacity .3s;
+  opacity: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35));
+}
+#pz-cursor.on { opacity: 1; }
+#pz-cursor path { fill: var(--cursor-fill); stroke: var(--cursor-stroke); stroke-width: 1.5; }
+#pz-cursor .ripple { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; }
+#pz-cursor.click .ripple { animation: pz-ripple .6s ease-out; }
+@keyframes pz-ripple { from { transform: scale(.3); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
+#pz-caption {
+  position: fixed; z-index: 45; left: 50%; bottom: 72px; transform: translateX(-50%);
+  width: min(880px, calc(100vw - 32px)); padding: 12px 18px; border-radius: var(--radius);
+  background: rgba(17,17,17,.88); color: #fff; font-size: 1rem; line-height: 1.45; text-align: center;
+  opacity: 0; transition: opacity .3s; pointer-events: none;
+}
+#pz-caption.on { opacity: 1; }
+.pz-bar {
+  position: fixed; z-index: 60; left: 0; right: 0; bottom: 0; height: 56px;
+  display: flex; align-items: center; gap: 8px; padding: 0 16px;
+  background: var(--surface); border-top: 1px solid var(--border);
+}
+.pz-bar button {
+  font: inherit; font-size: .9rem; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; min-width: 40px;
+}
+.pz-bar button:hover { border-color: var(--accent); }
+.pz-bar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.pz-bar .count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; white-space: nowrap; }
+.pz-bar .ttl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.pz-progress { position: fixed; z-index: 61; left: 0; bottom: 56px; height: 3px; background: var(--accent); transition: width .35s ease; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Overview mode (press O): every slide stacked — good for reading later. */
+body.overview { overflow: auto; }
+body.overview .deck { position: static; }
+body.overview .slide { position: relative; opacity: 1; visibility: visible; transform: none; overflow: visible; border-bottom: 1px solid var(--border); min-height: 0; }
+body.overview .slide > .notes { display: block; margin-top: 20px; padding: 12px 16px; border-radius: var(--radius); background: var(--surface-2); color: var(--muted); font-size: .92rem; }
+body.overview .slide > .notes::before { content: "Speaker notes — "; font-weight: 600; }
+@media print {
+  body { overflow: visible; }
+  .pz-bar, .pz-progress, #pz-cursor, #pz-spot, #pz-caption { display: none !important; }
+  .deck { position: static; }
+  .slide { position: relative; opacity: 1; visibility: visible; transform: none; overflow: visible; page-break-after: always; }
+}
+@media (max-width: 600px) {
+  .pz-bar .ttl { display: none; }
+  #pz-caption { bottom: 68px; font-size: .92rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<main class="deck" id="deck" aria-live="off">
+<!--
+  ══ SLIDES:START ══════════════════════════════════════════════════════════
+  Authoring contract (see references/presentation-format.md):
+    • One <section class="slide" data-title="…"> per slide, in order.
+    • <aside class="notes"> inside each slide = the narration script Claude speaks.
+      Inline cues like [[spotlight flow]] or [[point store]] split it into beats.
+    • data-spot="name" on any element Claude will point at / spotlight.
+      Spot names must be unique within the deck.
+  Everything between SLIDES:START and SLIDES:END is replaced per presentation;
+  the example below presents a small, realistic dev plan.
+-->
+
+<section class="slide" data-title="Settings dark mode">
+  <div class="title-slide">
+    <div class="kicker">Plan review · before implementation</div>
+    <h1 data-spot="title">Dark mode for the Settings page</h1>
+    <p class="lead">What we are building, why it matters now, how it will be built in three small slices, and what I need you to decide.</p>
+    <div class="meta"><span>Repo: <code>acme/web</code></span><span>Estimated effort: ~½ day</span><span>Status: <span class="pill warn">awaiting go-ahead</span></span></div>
+  </div>
+  <aside class="notes">Thanks for joining. I'm going to walk you through the plan for adding dark mode to the Settings page before I write any code. It takes about three minutes. Interrupt me at any point by just talking.</aside>
+</section>
+
+<section class="slide" data-title="Why now">
+  <div class="kicker">Context</div>
+  <h2>Why this, why now</h2>
+  <div class="grid">
+    <div class="card" data-spot="why-users"><h3>Users are asking</h3><p>14 support tickets this quarter mention eye strain or "dark mode". It is the top-voted item on the feedback board.</p></div>
+    <div class="card" data-spot="why-tokens"><h3>The groundwork exists</h3><p>Colours already live in CSS variables since the design-token refactor, so the change is mostly additive.</p></div>
+    <div class="card"><h3>Low blast radius</h3><p>Starting with Settings only keeps the change reviewable and lets us learn before rolling out app-wide.</p></div>
+  </div>
+  <aside class="notes">Two reasons this is worth doing now. [[spotlight why-users]] First, users are asking for it — it's the most requested item this quarter. [[spotlight why-tokens]] Second, the design-token refactor already moved our colours into CSS variables, so most of the work is adding a second set of values rather than rewriting components.</aside>
+</section>
+
+<section class="slide" data-title="Approach">
+  <div class="kicker">How</div>
+  <h2>Approach</h2>
+  <svg class="diagram" viewBox="0 0 760 200" role="img" aria-label="Preference flows from the toggle to storage, then to the theme attribute on the root element, which switches token values." data-spot="flow">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+    <rect class="box" x="10" y="60" width="160" height="70" rx="10"/><text x="90" y="92" text-anchor="middle">Theme toggle</text><text class="sub" x="90" y="112" text-anchor="middle">Settings › Appearance</text>
+    <rect class="box hl" x="210" y="60" width="160" height="70" rx="10" data-spot="store"/><text x="290" y="92" text-anchor="middle">usePreference()</text><text class="sub" x="290" y="112" text-anchor="middle">localStorage + API</text>
+    <rect class="box" x="410" y="60" width="160" height="70" rx="10"/><text x="490" y="92" text-anchor="middle">&lt;html data-theme&gt;</text><text class="sub" x="490" y="112" text-anchor="middle">set before paint</text>
+    <rect class="box" x="610" y="60" width="140" height="70" rx="10"/><text x="680" y="92" text-anchor="middle">tokens.css</text><text class="sub" x="680" y="112" text-anchor="middle">dark values</text>
+    <path class="edge" d="M170 95 H205" marker-end="url(#ah)"/><path class="edge" d="M370 95 H405" marker-end="url(#ah)"/><path class="edge" d="M570 95 H605" marker-end="url(#ah)"/>
+  </svg>
+  <div class="callout" data-spot="no-flash"><strong>No flash of the wrong theme:</strong> a 6-line inline script in <code>&lt;head&gt;</code> sets <code>data-theme</code> before first paint.</div>
+  <aside class="notes">Here is how it fits together. [[spotlight flow]] The toggle writes the preference through a small hook, [[point store]] usePreference, which saves it locally and syncs it to the user's profile. The value lands on the html element as a data-theme attribute, and the token stylesheet switches values from there. [[spotlight no-flash]] One detail worth calling out: an inline script in the head applies the theme before first paint, so there's no white flash on load.</aside>
+</section>
+
+<section class="slide" data-title="Mock-up">
+  <div class="kicker">What it looks like</div>
+  <h2>Mock-up: Settings › Appearance</h2>
+  <div class="mock">
+    <div class="mock-bar"><i></i><i></i><i></i><span class="url">app.acme.dev/settings/appearance</span></div>
+    <div class="mock-body">
+      <h3>Appearance</h3>
+      <p style="color:var(--muted)">Choose how Acme looks to you.</p>
+      <div class="grid" data-spot="theme-choice">
+        <div class="card"><strong>System</strong><p style="color:var(--muted);margin:0">Follow your OS setting</p></div>
+        <div class="card" style="outline:2px solid var(--accent)"><strong>Light</strong><p style="color:var(--muted);margin:0">Current default</p></div>
+        <div class="card"><strong>Dark</strong><p style="color:var(--muted);margin:0">Easier at night</p></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">[[spotlight theme-choice]] This is the mock-up. A three-way choice: System, Light, and Dark. I'm proposing System as the new default for new users, but existing users keep Light so nobody gets surprised. That default is one of the decisions I'll ask you about at the end.</aside>
+</section>
+
+<section class="slide" data-title="Slices">
+  <div class="kicker">Delivery</div>
+  <h2>Three slices, each shippable</h2>
+  <ol class="steps">
+    <li data-spot="slice-1"><strong>Dark token values + head script</strong><span>Add dark values to tokens.css; inline script sets data-theme. Behind a flag. Tests: snapshot both themes.</span></li>
+    <li data-spot="slice-2"><strong>Appearance setting UI</strong><span>The three-way control and usePreference hook with localStorage. Tests: unit + one e2e toggle test.</span></li>
+    <li data-spot="slice-3"><strong>Sync to profile</strong><span>Persist the choice via the existing preferences API so it follows the user across devices.</span></li>
+  </ol>
+  <aside class="notes">I'd deliver it in three slices, each one shippable on its own. [[point slice-1]] Slice one adds the dark token values and the head script, behind a flag. [[point slice-2]] Slice two is the actual setting with its hook. [[point slice-3]] Slice three syncs the choice to the user's profile. After each slice I'll run the tests and show you the result before moving on.</aside>
+</section>
+
+<section class="slide" data-title="Risks">
+  <div class="kicker">Risks &amp; open questions</div>
+  <h2>What could go wrong</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Level</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr data-spot="risk-contrast"><td>Some hard-coded colours bypass tokens</td><td><span class="pill warn">medium</span></td><td>Grep for hex values in Settings; fix the ~10 hits in slice 1.</td></tr>
+      <tr><td>Third-party embeds stay light</td><td><span class="pill ok">low</span></td><td>Accept for now; note in release notes.</td></tr>
+      <tr><td>Contrast regressions</td><td><span class="pill risk">high</span></td><td>Run axe contrast checks on both themes in CI.</td></tr>
+    </tbody>
+  </table>
+  <aside class="notes">[[highlight risk-contrast]] The main risk is colours that are hard-coded rather than using tokens — I found about ten in the Settings code and will fix them in slice one. The highest-severity risk is contrast, so I'll add automated contrast checks for both themes in CI.</aside>
+</section>
+
+<section class="slide" data-title="Decisions">
+  <div class="kicker">Your call</div>
+  <h2>Decisions I need from you</h2>
+  <ul class="clean" data-spot="decisions">
+    <li><strong>1. Default for new users:</strong> System (proposed) or Light?</li>
+    <li><strong>2. Scope:</strong> Settings only (proposed), or app-wide in one go?</li>
+    <li><strong>3. Flag:</strong> ship slice 1 behind a feature flag (proposed)?</li>
+  </ul>
+  <div class="card" style="margin-top:20px" data-spot="agreed">
+    <h3>Agreed in this session</h3>
+    <p style="color:var(--muted)">Filled in live as we discuss.</p>
+  </div>
+  <aside class="notes">That's the plan. [[spotlight decisions]] I need three decisions from you: the default for new users, whether we keep the scope to Settings, and whether slice one ships behind a flag. Once we agree, I'll update this page with what we decided and start on slice one.</aside>
+</section>
+
+<!-- ══ SLIDES:END ══════════════════════════════════════════════════════ -->
+</main>
+
+<div id="pz-spot" aria-hidden="true"></div>
+<div id="pz-cursor" aria-hidden="true">
+  <svg viewBox="0 0 28 28" width="28" height="28"><path d="M4 2 L4 22 L9.5 17 L13 25.5 L16.5 24 L13 15.8 L20.5 15.8 Z"/></svg>
+  <span class="ripple"></span>
+</div>
+<div id="pz-caption" role="status" aria-live="polite"></div>
+<div class="pz-progress" id="pz-progress"></div>
+<nav class="pz-bar" aria-label="Presentation controls">
+  <button type="button" id="pz-prev" aria-label="Previous slide">‹</button>
+  <button type="button" id="pz-next" aria-label="Next slide">›</button>
+  <span class="count" id="pz-count">1 / 1</span>
+  <span class="ttl" id="pz-title"></span>
+  <button type="button" id="pz-cc" aria-pressed="false" title="Captions (C)">CC</button>
+  <button type="button" id="pz-ov" aria-pressed="false" title="Overview (O)">Overview</button>
+</nav>
+<div class="sr-only" id="pz-status" aria-live="polite"></div>
+
+<script>
+/*
+ * Presenter runtime. Exposes window.presenter for the browser tool to drive.
+ * Every method is synchronous-safe and returns presenter.state() so a single
+ * evaluate call both acts and reports back. Commands can also arrive via:
+ *   • URL hash   #3  |  #3/spot-name  |  #3/spot-name/spotlight
+ *   • postMessage({ presenter: "go 3; point spot-name" })
+ *   • presenter.run("go 3; spotlight flow; caption Hello")
+ */
+(function () {
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".deck > .slide"));
+  var $ = function (id) { return document.getElementById(id); };
+  var spotEl = $("pz-spot"), cursorEl = $("pz-cursor"), captionEl = $("pz-caption");
+  var index = 0, captions = false, spotTarget = null, cursorTarget = null, hlTarget = null;
+  var MOTION = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function clamp(n) { return Math.max(0, Math.min(slides.length - 1, n)); }
+  var CUE = /\[\[([^\]]+)\]\]/g;
+  function rawNotes(i) { var n = slides[i] && slides[i].querySelector(".notes"); return n ? n.textContent.trim().replace(/\s+/g, " ") : ""; }
+  function notesOf(i) { return rawNotes(i).replace(CUE, "").replace(/\s+/g, " ").trim(); }
+  // Split narration into beats: [{cue: "point store" | null, text: "…"}]. A cue runs, then its text is spoken.
+  function beatsOf(i) {
+    var raw = rawNotes(i), out = [], cue = null, last = 0, m;
+    CUE.lastIndex = 0;
+    while ((m = CUE.exec(raw))) {
+      var t = raw.slice(last, m.index).trim();
+      if (t || cue) out.push({ cue: cue, text: t });
+      cue = m[1].trim(); last = CUE.lastIndex;
+    }
+    var tail = raw.slice(last).trim();
+    if (tail || cue) out.push({ cue: cue, text: tail });
+    return out;
+  }
+  function titleOf(i) { return (slides[i] && slides[i].getAttribute("data-title")) || ("Slide " + (i + 1)); }
+  function spotsOf(i) { return slides[i] ? Array.prototype.map.call(slides[i].querySelectorAll("[data-spot]"), function (e) { return e.getAttribute("data-spot"); }) : []; }
+
+  function resolve(target) {
+    if (!target) return null;
+    if (target instanceof Element) return target;
+    var el = document.querySelector('[data-spot="' + String(target).replace(/"/g, '\\"') + '"]');
+    if (!el) { try { el = document.querySelector(target); } catch (e) { el = null; } }
+    return el;
+  }
+  function slideIndexOf(el) { var s = el && el.closest(".slide"); return s ? slides.indexOf(s) : -1; }
+
+  function state() {
+    return {
+      index: index, number: index + 1, total: slides.length, title: titleOf(index),
+      notes: notesOf(index), spots: spotsOf(index), captions: captions,
+      spotlight: spotTarget ? spotTarget.getAttribute("data-spot") : null,
+      overview: document.body.classList.contains("overview")
+    };
+  }
+
+  function render() {
+    slides.forEach(function (s, i) { s.classList.toggle("active", i === index); s.setAttribute("aria-hidden", i === index ? "false" : "true"); });
+    $("pz-count").textContent = (index + 1) + " / " + slides.length;
+    $("pz-title").textContent = titleOf(index);
+    $("pz-progress").style.width = ((index + 1) / slides.length * 100) + "%";
+    $("pz-status").textContent = "Slide " + (index + 1) + " of " + slides.length + ": " + titleOf(index);
+    document.body.setAttribute("data-slide", String(index + 1));
+    if (captions) caption(notesOf(index), true);
+  }
+
+  function go(n) {
+    var i = typeof n === "number" ? n - 1 : -1;
+    if (typeof n === "string") {
+      if (/^\d+$/.test(n)) i = parseInt(n, 10) - 1;
+      else { var el = resolve(n); i = slideIndexOf(el); if (i < 0) i = slides.findIndex(function (_, k) { return titleOf(k).toLowerCase() === n.toLowerCase(); }); }
+    }
+    if (i < 0) return state();
+    clear();
+    index = clamp(i);
+    slides[index].scrollTop = 0;
+    render();
+    return state();
+  }
+  function next() { return go(index + 2); }
+  function prev() { return go(index); }
+
+  function ensureVisible(el) {
+    var i = slideIndexOf(el);
+    if (i >= 0 && i !== index && !document.body.classList.contains("overview")) { index = i; render(); }
+    el.scrollIntoView({ behavior: MOTION ? "smooth" : "auto", block: "center", inline: "nearest" });
+  }
+
+  function placeSpot() {
+    if (!spotTarget) return;
+    var r = spotTarget.getBoundingClientRect(), pad = 8;
+    spotEl.style.left = (r.left - pad) + "px"; spotEl.style.top = (r.top - pad) + "px";
+    spotEl.style.width = (r.width + pad * 2) + "px"; spotEl.style.height = (r.height + pad * 2) + "px";
+  }
+  function placeCursor() {
+    if (!cursorTarget) return;
+    var r = cursorTarget.getBoundingClientRect();
+    var x = r.left + Math.min(r.width * 0.5, r.width - 6), y = r.top + Math.min(r.height * 0.6, r.height - 4);
+    cursorEl.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+  }
+  function track() { placeSpot(); placeCursor(); }
+
+  function point(target, opts) {
+    var el = resolve(target); if (!el) return state();
+    ensureVisible(el);
+    cursorTarget = el; cursorEl.classList.add("on");
+    setTimeout(track, MOTION ? 350 : 0); track();
+    if (opts && opts.click) setTimeout(function () { cursorEl.classList.remove("click"); void cursorEl.offsetWidth; cursorEl.classList.add("click"); }, 700);
+    return state();
+  }
+  function spotlight(target) {
+    var el = resolve(target); if (!el) return state();
+    ensureVisible(el);
+    spotTarget = el; spotEl.classList.add("on");
+    setTimeout(placeSpot, MOTION ? 350 : 0); placeSpot();
+    return state();
+  }
+  function highlight(target) {
+    var el = resolve(target); if (!el) return state();
+    if (hlTarget) hlTarget.classList.remove("pz-hl");
+    ensureVisible(el); hlTarget = el; el.classList.add("pz-hl");
+    return state();
+  }
+  function scrollTo(target) {
+    var s = slides[index];
+    if (target === "top") s.scrollTo({ top: 0, behavior: MOTION ? "smooth" : "auto" });
+    else if (target === "bottom") s.scrollTo({ top: s.scrollHeight, behavior: MOTION ? "smooth" : "auto" });
+    else if (typeof target === "number" || /^-?\d+$/.test(String(target))) s.scrollBy({ top: Number(target), behavior: MOTION ? "smooth" : "auto" });
+    else { var el = resolve(target); if (el) ensureVisible(el); }
+    return state();
+  }
+  function caption(text, keep) {
+    if (text === null || text === undefined || text === "") { captionEl.classList.remove("on"); if (!keep) captionEl.textContent = ""; }
+    else { captionEl.textContent = String(text); captionEl.classList.add("on"); }
+    return state();
+  }
+  function setCaptions(on) {
+    captions = !!on; $("pz-cc").setAttribute("aria-pressed", String(captions));
+    caption(captions ? notesOf(index) : null);
+    return state();
+  }
+  function clear() {
+    spotTarget = null; spotEl.classList.remove("on");
+    cursorTarget = null; cursorEl.classList.remove("on");
+    if (hlTarget) { hlTarget.classList.remove("pz-hl"); hlTarget = null; }
+    return state();
+  }
+  function overview(on) {
+    var v = on === undefined ? !document.body.classList.contains("overview") : !!on;
+    clear(); document.body.classList.toggle("overview", v); $("pz-ov").setAttribute("aria-pressed", String(v));
+    return state();
+  }
+  function theme(t) {
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    else document.documentElement.removeAttribute("data-theme");
+    return state();
+  }
+  // Fill an element's content live, e.g. the "Agreed in this session" card.
+  function setHTML(target, html) { var el = resolve(target); if (el) el.innerHTML = html; return state(); }
+  function append(target, html) { var el = resolve(target); if (el) el.insertAdjacentHTML("beforeend", html); return state(); }
+  function outline() { return slides.map(function (_, i) { return { number: i + 1, title: titleOf(i), spots: spotsOf(i), notes: notesOf(i) }; }); }
+  function beats(n) { return beatsOf(n === undefined ? index : n - 1); }
+
+  // Tiny command language: "go 3; point flow; spotlight store; caption Hello there; clear"
+  function run(script) {
+    String(script).split(";").forEach(function (cmd) {
+      var m = cmd.trim().match(/^(\w+)\s*(.*)$/); if (!m) return;
+      var verb = m[1].toLowerCase(), arg = m[2].trim();
+      switch (verb) {
+        case "go": go(arg); break;
+        case "next": next(); break;
+        case "prev": prev(); break;
+        case "point": point(arg); break;
+        case "click": point(arg, { click: true }); break;
+        case "spotlight": spotlight(arg); break;
+        case "highlight": highlight(arg); break;
+        case "scroll": scrollTo(arg || "bottom"); break;
+        case "caption": caption(arg || null); break;
+        case "captions": setCaptions(arg !== "off"); break;
+        case "clear": clear(); break;
+        case "overview": overview(arg ? arg !== "off" : undefined); break;
+        case "theme": theme(arg); break;
+      }
+    });
+    return state();
+  }
+
+  function fromHash() {
+    var h = decodeURIComponent(location.hash.replace(/^#/, "")); if (!h) return;
+    var parts = h.split("/");
+    if (parts[0]) go(parts[0]);
+    if (parts[1]) { if (parts[2] === "spotlight") spotlight(parts[1]); else if (parts[2] === "highlight") highlight(parts[1]); else point(parts[1]); }
+  }
+
+  window.addEventListener("hashchange", fromHash);
+  window.addEventListener("message", function (e) { if (e.data && typeof e.data.presenter === "string") run(e.data.presenter); });
+  window.addEventListener("resize", track);
+  document.addEventListener("scroll", track, true);
+  document.addEventListener("keydown", function (e) {
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    switch (e.key) {
+      case "ArrowRight": case "PageDown": case " ": e.preventDefault(); next(); break;
+      case "ArrowLeft": case "PageUp": e.preventDefault(); prev(); break;
+      case "Home": go(1); break;
+      case "End": go(slides.length); break;
+      case "Escape": clear(); break;
+      case "c": case "C": setCaptions(!captions); break;
+      case "o": case "O": overview(); break;
+    }
+  });
+  $("pz-next").addEventListener("click", next);
+  $("pz-prev").addEventListener("click", prev);
+  $("pz-cc").addEventListener("click", function () { setCaptions(!captions); });
+  $("pz-ov").addEventListener("click", function () { overview(); });
+
+  window.presenter = {
+    version: "0.1.0",
+    go: go, next: next, prev: prev, point: point, spotlight: spotlight, highlight: highlight,
+    scrollTo: scrollTo, caption: caption, captions: setCaptions, clear: clear, overview: overview,
+    theme: theme, setHTML: setHTML, append: append, state: state, outline: outline, beats: beats, run: run
+  };
+
+  render();
+  fromHash();
+})();
+</script>
+</body>
+</html>

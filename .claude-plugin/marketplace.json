@@ -1,0 +1,19 @@
+{
+  "name": "show-and-discuss",
+  "owner": {
+    "name": "EhsanRS",
+    "url": "https://github.com/EhsanRS"
+  },
+  "metadata": {
+    "description": "Present a plan as a live, narrated walkthrough before Claude builds it — then discuss it by voice."
+  },
+  "plugins": [
+    {
+      "name": "show-and-discuss",
+      "source": "./plugins/show-and-discuss",
+      "description": "Turn a plan into a narrated slide walkthrough with mock-ups, a pointer and voice Q&A — discuss it before any code is written.",
+      "category": "productivity",
+      "keywords": ["planning", "presentation", "voice", "artifacts", "browser", "review"]
+    }
+  ]
+}

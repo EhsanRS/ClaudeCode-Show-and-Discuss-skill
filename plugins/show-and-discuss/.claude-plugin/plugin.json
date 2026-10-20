@@ -1,0 +1,13 @@
+{
+  "name": "show-and-discuss",
+  "version": "0.1.0",
+  "description": "Present a plan as a narrated walkthrough (artifact + browser pointer + voice) and discuss it before implementation.",
+  "author": {
+    "name": "EhsanRS",
+    "url": "https://github.com/EhsanRS"
+  },
+  "homepage": "https://github.com/EhsanRS/ClaudeCode-Show-and-Discuss-skill",
+  "repository": "https://github.com/EhsanRS/ClaudeCode-Show-and-Discuss-skill",
+  "license": "Apache-2.0",
+  "keywords": ["planning", "presentation", "voice", "artifacts", "browser", "review"]
+}
