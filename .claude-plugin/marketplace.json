@@ -5,13 +5,13 @@
     "url": "https://github.com/EhsanRS"
   },
   "metadata": {
-    "description": "Present a plan as a live, narrated walkthrough before Claude builds it — then discuss it by voice."
+    "description": "Demo what Claude is about to build — a narrated, clickable walkthrough — and check it understood before any code is written."
   },
   "plugins": [
     {
       "name": "show-and-discuss",
       "source": "./plugins/show-and-discuss",
-      "description": "Turn a plan into a narrated slide walkthrough with mock-ups, a pointer and voice Q&A — discuss it before any code is written.",
+      "description": "Demo the intended result (clickable mocks, pointer, voice), confirm understanding at a checkpoint, then go into the technical plan.",
       "category": "productivity",
       "keywords": ["planning", "presentation", "voice", "artifacts", "browser", "review"]
     }

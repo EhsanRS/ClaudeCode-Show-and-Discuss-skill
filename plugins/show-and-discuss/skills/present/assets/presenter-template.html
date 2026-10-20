@@ -162,6 +162,23 @@ svg.diagram .sub { fill: var(--muted); font-size: 12px; }
 svg.diagram .edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
 svg.diagram .arrow { fill: var(--muted); }
 
+/* Demo prototypes: data-demo-state on a root, data-when / data-active-when inside, data-action to switch. */
+[data-action] { cursor: pointer; }
+[hidden] { display: none !important; }
+.demo-option { font: inherit; text-align: left; color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: background .3s, border-color .3s, color .3s; }
+.demo-option.is-active { outline: 2px solid var(--accent); outline-offset: 1px; }
+.toast { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 600; font-size: .9rem; }
+/* Terminal / API demo: reveal lines one at a time with [[reveal spot]]. */
+.terminal { background: var(--code-bg); color: var(--code-text); border-radius: var(--radius); padding: 16px 18px; font: 13.5px/1.7 var(--mono); overflow-x: auto; }
+.terminal > div { white-space: pre-wrap; }
+.terminal .cmd::before { content: "$ "; color: #7ee787; }
+.terminal .out { color: #a5b3c2; }
+.terminal .ok { color: #7ee787; }
+.terminal .err { color: #ff7b72; }
+[data-reveal] { transition: opacity .45s ease, transform .45s ease; }
+body.pz-live [data-reveal]:not(.pz-shown) { opacity: 0; visibility: hidden; transform: translateY(6px); }
+.section-tag { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 2px 8px; margin-right: 8px; vertical-align: 2px; }
+
 /* ── Presenter overlay ───────────────────────────────────────────────── */
 #pz-spot {
   position: fixed; z-index: 40; pointer-events: none; border-radius: 10px;
@@ -209,6 +226,7 @@ svg.diagram .arrow { fill: var(--muted); }
 body.overview { overflow: auto; }
 body.overview .deck { position: static; }
 body.overview .slide { position: relative; opacity: 1; visibility: visible; transform: none; overflow: visible; border-bottom: 1px solid var(--border); min-height: 0; }
+body.overview [data-reveal] { opacity: 1 !important; visibility: visible !important; transform: none !important; }
 body.overview .slide > .notes { display: block; margin-top: 20px; padding: 12px 16px; border-radius: var(--radius); background: var(--surface-2); color: var(--muted); font-size: .92rem; }
 body.overview .slide > .notes::before { content: "Speaker notes — "; font-weight: 600; }
 @media print {
@@ -232,39 +250,95 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
 <!--
   ══ SLIDES:START ══════════════════════════════════════════════════════════
   Authoring contract (see references/presentation-format.md):
-    • One <section class="slide" data-title="…"> per slide, in order.
+    • Demo first: Brief → Demo → Check (data-checkpoint) → Technical (optional).
+    • One <section class="slide" data-title="…" data-section="…"> per slide.
     • <aside class="notes"> inside each slide = the narration script Claude speaks.
-      Inline cues like [[spotlight flow]] or [[point store]] split it into beats.
-    • data-spot="name" on any element Claude will point at / spotlight.
-      Spot names must be unique within the deck.
+      Inline cues like [[click opt-dark]] or [[reveal devices]] split it into beats.
+    • data-spot="name" on anything Claude will point at; unique within the deck.
+    • Demos: data-demo-state / data-when / data-active-when / data-action / data-reveal.
   Everything between SLIDES:START and SLIDES:END is replaced per presentation;
-  the example below presents a small, realistic dev plan.
+  the example below demos a small, realistic feature.
 -->
 
-<section class="slide" data-title="Settings dark mode">
+<section class="slide" data-title="What you asked for" data-section="Brief">
   <div class="title-slide">
-    <div class="kicker">Plan review · before implementation</div>
-    <h1 data-spot="title">Dark mode for the Settings page</h1>
-    <p class="lead">What we are building, why it matters now, how it will be built in three small slices, and what I need you to decide.</p>
-    <div class="meta"><span>Repo: <code>acme/web</code></span><span>Estimated effort: ~½ day</span><span>Status: <span class="pill warn">awaiting go-ahead</span></span></div>
+    <div class="kicker">Show &amp; discuss · demo first</div>
+    <h1 data-spot="title">Dark mode for Settings</h1>
+    <p class="lead">Here's what I understood you asked for, then a demo of the result, so you can tell me whether I got it right before any code is written.</p>
+    <div class="grid" style="margin-top:12px">
+      <div class="card" data-spot="ask"><h3>You asked</h3><p>"Let users switch the Settings page between light and dark."</p></div>
+      <div class="card" data-spot="meaning"><h3>I took that to mean</h3><p>A Light / Dark / System choice that applies instantly and is remembered on every device.</p></div>
+      <div class="card" data-spot="scope"><h3>Not included</h3><p>Other pages, custom colours, switching on a schedule.</p></div>
+    </div>
   </div>
-  <aside class="notes">Thanks for joining. I'm going to walk you through the plan for adding dark mode to the Settings page before I write any code. It takes about three minutes. Interrupt me at any point by just talking.</aside>
+  <aside class="notes">Thanks for joining. [[spotlight ask]] You asked me to let users switch the Settings page between light and dark. [[spotlight meaning]] I took that to mean a three-way choice, light, dark, or follow the system, that applies instantly and is remembered across devices. [[spotlight scope]] I've left other pages and custom colours out for now. Let me show you what that looks like. Interrupt me any time by just talking.</aside>
 </section>
 
-<section class="slide" data-title="Why now">
-  <div class="kicker">Context</div>
-  <h2>Why this, why now</h2>
+<section class="slide" data-title="Switching theme" data-section="Demo">
+  <style>
+    .demo-app { transition: background .45s, color .45s; }
+    .demo-app[data-demo-state="dark"] { background: #16181c; color: #e9e7e3; }
+    .demo-app[data-demo-state="dark"] .demo-option { background: #22252b; border-color: #34383f; }
+    .demo-app[data-demo-state="dark"] .muted { color: #9a9a9a; }
+    .demo-app .muted { color: var(--muted); }
+    .demo-app .nav { display: flex; gap: 18px; font-size: .9rem; margin-bottom: 18px; flex-wrap: wrap; }
+    .demo-app .nav b { border-bottom: 2px solid var(--accent); }
+  </style>
+  <div class="kicker">Demo · what you'll get</div>
+  <h2>Pick a theme, see it instantly</h2>
+  <div class="mock">
+    <div class="mock-bar"><i></i><i></i><i></i><span class="url">app.acme.dev/settings/appearance</span></div>
+    <div class="mock-body demo-app" data-spot="app" data-demo-state="light">
+      <div class="nav muted"><span>Profile</span><span>Notifications</span><b>Appearance</b><span>Billing</span></div>
+      <h3>Appearance</h3>
+      <p class="muted">Choose how Acme looks to you.</p>
+      <div class="grid" data-spot="theme-choice">
+        <button type="button" class="demo-option" data-spot="opt-system" data-action="app=system" data-active-when="system"><strong>System</strong><br><span class="muted">Follow your OS setting</span></button>
+        <button type="button" class="demo-option" data-spot="opt-light" data-action="app=light" data-active-when="light"><strong>Light</strong><br><span class="muted">Bright and clear</span></button>
+        <button type="button" class="demo-option" data-spot="opt-dark" data-action="app=dark" data-active-when="dark"><strong>Dark</strong><br><span class="muted">Easier at night</span></button>
+      </div>
+      <p style="margin:16px 0 0" data-when="dark"><span class="toast">✓ Saved · applies on all your devices</span></p>
+      <p style="margin:16px 0 0" class="muted" data-when="system">Following your OS (currently light).</p>
+    </div>
+  </div>
+  <aside class="notes">Here's the Settings page. [[point theme-choice]] Under Appearance there are three choices. [[click opt-dark]] Pick Dark, and the page switches straight away, with no reload and no save button. [[click opt-system]] Pick System, and it follows whatever your operating system is set to. [[click opt-light]] And Light takes you back.</aside>
+</section>
+
+<section class="slide" data-title="It remembers" data-section="Demo">
+  <div class="kicker">Demo · what you'll get</div>
+  <h2>Your choice follows you</h2>
+  <div data-spot="devices">
+  <div class="compare">
+    <div data-spot="laptop">
+      <div class="label">Laptop: you choose Dark</div>
+      <div class="mock"><div class="mock-bar"><i></i><i></i><i></i><span class="url">settings/appearance</span></div>
+        <div class="mock-body" style="background:#16181c;color:#e9e7e3"><strong>Appearance</strong><p style="color:#9a9a9a;margin:4px 0 0">Dark ✓</p></div></div>
+    </div>
+    <div data-reveal data-spot="phone">
+      <div class="label">Phone: next time you open the app</div>
+      <div class="mock"><div class="mock-bar"><i></i><i></i><i></i><span class="url">acme app</span></div>
+        <div class="mock-body" style="background:#16181c;color:#e9e7e3"><strong>Home</strong><p style="color:#9a9a9a;margin:4px 0 0">Already dark. Nothing to set.</p></div></div>
+    </div>
+  </div>
+  <div class="callout" data-reveal data-spot="no-flash-demo"><strong>No white flash:</strong> pages load in your theme from the very first frame.</div>
+  </div>
+  <aside class="notes">It also remembers. [[spotlight laptop]] Choose Dark on your laptop, [[reveal devices]] and the next time you open the app on your phone, it's already dark. [[reveal devices]] And pages load in your theme from the very first frame, so there's no flash of white.</aside>
+</section>
+
+<section class="slide" data-title="Did I get it right?" data-section="Check" data-checkpoint>
+  <div class="kicker">Checkpoint</div>
+  <h2>Did I understand the assignment?</h2>
   <div class="grid">
-    <div class="card" data-spot="why-users"><h3>Users are asking</h3><p>14 support tickets this quarter mention eye strain or "dark mode". It is the top-voted item on the feedback board.</p></div>
-    <div class="card" data-spot="why-tokens"><h3>The groundwork exists</h3><p>Colours already live in CSS variables since the design-token refactor, so the change is mostly additive.</p></div>
-    <div class="card"><h3>Low blast radius</h3><p>Starting with Settings only keeps the change reviewable and lets us learn before rolling out app-wide.</p></div>
+    <div class="card" data-spot="will"><h3>I'll build</h3><ul class="clean"><li>Light / Dark / System choice in Settings</li><li>Instant switch, no reload</li><li>Remembered across devices</li></ul></div>
+    <div class="card" data-spot="wont"><h3>I won't build (yet)</h3><ul class="clean"><li>Dark mode on other pages</li><li>Custom colours</li><li>Scheduled switching</li></ul></div>
+    <div class="card" data-spot="assumptions"><h3>Assumptions</h3><ul class="clean"><li>Existing users stay on Light</li><li>New users default to System</li><li>Sync uses the existing profile settings</li></ul></div>
   </div>
-  <aside class="notes">Two reasons this is worth doing now. [[spotlight why-users]] First, users are asking for it — it's the most requested item this quarter. [[spotlight why-tokens]] Second, the design-token refactor already moved our colours into CSS variables, so most of the work is adding a second set of values rather than rewriting components.</aside>
+  <aside class="notes">That's the result I'm aiming for. [[spotlight assumptions]] I made three assumptions: existing users stay on Light, new users default to System, and the choice syncs through your existing profile settings. [[clear]] Before I go into how I'd build it: did I understand the assignment? Is anything missing or wrong?</aside>
 </section>
 
-<section class="slide" data-title="Approach">
-  <div class="kicker">How</div>
-  <h2>Approach</h2>
+<section class="slide" data-title="How it works" data-section="Technical">
+  <div class="kicker">Under the hood</div>
+  <h2>How it works</h2>
   <svg class="diagram" viewBox="0 0 760 200" role="img" aria-label="Preference flows from the toggle to storage, then to the theme attribute on the root element, which switches token values." data-spot="flow">
     <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker></defs>
     <rect class="box" x="10" y="60" width="160" height="70" rx="10"/><text x="90" y="92" text-anchor="middle">Theme toggle</text><text class="sub" x="90" y="112" text-anchor="middle">Settings › Appearance</text>
@@ -274,28 +348,10 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     <path class="edge" d="M170 95 H205" marker-end="url(#ah)"/><path class="edge" d="M370 95 H405" marker-end="url(#ah)"/><path class="edge" d="M570 95 H605" marker-end="url(#ah)"/>
   </svg>
   <div class="callout" data-spot="no-flash"><strong>No flash of the wrong theme:</strong> a 6-line inline script in <code>&lt;head&gt;</code> sets <code>data-theme</code> before first paint.</div>
-  <aside class="notes">Here is how it fits together. [[spotlight flow]] The toggle writes the preference through a small hook, [[point store]] usePreference, which saves it locally and syncs it to the user's profile. The value lands on the html element as a data-theme attribute, and the token stylesheet switches values from there. [[spotlight no-flash]] One detail worth calling out: an inline script in the head applies the theme before first paint, so there's no white flash on load.</aside>
+  <aside class="notes">Here's how it fits together. [[spotlight flow]] The toggle writes the preference through a small hook, [[point store]] which saves it locally and syncs it to the user's profile. The value lands on the page as a theme attribute, and our existing colour tokens switch from there. [[spotlight no-flash]] A tiny script in the page head applies the theme before first paint. That's what prevents the white flash you saw in the demo.</aside>
 </section>
 
-<section class="slide" data-title="Mock-up">
-  <div class="kicker">What it looks like</div>
-  <h2>Mock-up: Settings › Appearance</h2>
-  <div class="mock">
-    <div class="mock-bar"><i></i><i></i><i></i><span class="url">app.acme.dev/settings/appearance</span></div>
-    <div class="mock-body">
-      <h3>Appearance</h3>
-      <p style="color:var(--muted)">Choose how Acme looks to you.</p>
-      <div class="grid" data-spot="theme-choice">
-        <div class="card"><strong>System</strong><p style="color:var(--muted);margin:0">Follow your OS setting</p></div>
-        <div class="card" style="outline:2px solid var(--accent)"><strong>Light</strong><p style="color:var(--muted);margin:0">Current default</p></div>
-        <div class="card"><strong>Dark</strong><p style="color:var(--muted);margin:0">Easier at night</p></div>
-      </div>
-    </div>
-  </div>
-  <aside class="notes">[[spotlight theme-choice]] This is the mock-up. A three-way choice: System, Light, and Dark. I'm proposing System as the new default for new users, but existing users keep Light so nobody gets surprised. That default is one of the decisions I'll ask you about at the end.</aside>
-</section>
-
-<section class="slide" data-title="Slices">
+<section class="slide" data-title="Slices" data-section="Technical">
   <div class="kicker">Delivery</div>
   <h2>Three slices, each shippable</h2>
   <ol class="steps">
@@ -303,24 +359,24 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     <li data-spot="slice-2"><strong>Appearance setting UI</strong><span>The three-way control and usePreference hook with localStorage. Tests: unit + one e2e toggle test.</span></li>
     <li data-spot="slice-3"><strong>Sync to profile</strong><span>Persist the choice via the existing preferences API so it follows the user across devices.</span></li>
   </ol>
-  <aside class="notes">I'd deliver it in three slices, each one shippable on its own. [[point slice-1]] Slice one adds the dark token values and the head script, behind a flag. [[point slice-2]] Slice two is the actual setting with its hook. [[point slice-3]] Slice three syncs the choice to the user's profile. After each slice I'll run the tests and show you the result before moving on.</aside>
+  <aside class="notes">I'd deliver it in three slices, each shippable on its own. [[point slice-1]] First the dark colours and the head script, behind a flag. [[point slice-2]] Then the setting you saw in the demo. [[point slice-3]] Then syncing across devices. After each slice I'll run the tests and show you the result.</aside>
 </section>
 
-<section class="slide" data-title="Risks">
+<section class="slide" data-title="Risks" data-section="Technical">
   <div class="kicker">Risks &amp; open questions</div>
   <h2>What could go wrong</h2>
   <table>
     <thead><tr><th>Risk</th><th>Level</th><th>Mitigation</th></tr></thead>
     <tbody>
-      <tr data-spot="risk-contrast"><td>Some hard-coded colours bypass tokens</td><td><span class="pill warn">medium</span></td><td>Grep for hex values in Settings; fix the ~10 hits in slice 1.</td></tr>
+      <tr data-spot="risk-colours"><td>Some hard-coded colours bypass tokens</td><td><span class="pill warn">medium</span></td><td>Grep for hex values in Settings; fix the ~10 hits in slice 1.</td></tr>
       <tr><td>Third-party embeds stay light</td><td><span class="pill ok">low</span></td><td>Accept for now; note in release notes.</td></tr>
-      <tr><td>Contrast regressions</td><td><span class="pill risk">high</span></td><td>Run axe contrast checks on both themes in CI.</td></tr>
+      <tr data-spot="risk-contrast"><td>Contrast regressions</td><td><span class="pill risk">high</span></td><td>Run axe contrast checks on both themes in CI.</td></tr>
     </tbody>
   </table>
-  <aside class="notes">[[highlight risk-contrast]] The main risk is colours that are hard-coded rather than using tokens — I found about ten in the Settings code and will fix them in slice one. The highest-severity risk is contrast, so I'll add automated contrast checks for both themes in CI.</aside>
+  <aside class="notes">[[highlight risk-colours]] The main risk is colours that are hard-coded rather than using tokens. I found about ten in the Settings code and will fix them in slice one. [[highlight risk-contrast]] The most serious is contrast, so I'll add automated contrast checks for both themes.</aside>
 </section>
 
-<section class="slide" data-title="Decisions">
+<section class="slide" data-title="Decisions" data-section="Technical">
   <div class="kicker">Your call</div>
   <h2>Decisions I need from you</h2>
   <ul class="clean" data-spot="decisions">
@@ -332,7 +388,7 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     <h3>Agreed in this session</h3>
     <ul class="clean" data-spot="agreed"><li class="pz-placeholder">Filled in live as we discuss.</li></ul>
   </div>
-  <aside class="notes">That's the plan. [[spotlight decisions]] I need three decisions from you: the default for new users, whether we keep the scope to Settings, and whether slice one ships behind a flag. Once we agree, I'll update this page with what we decided and start on slice one.</aside>
+  <aside class="notes">That's everything. [[spotlight decisions]] I need three decisions from you: the default for new users, whether we keep the scope to Settings, and whether slice one ships behind a flag. Once we agree, I'll update this page with what we decided and start on slice one.</aside>
 </section>
 
 <!-- ══ SLIDES:END ══════════════════════════════════════════════════════ -->
@@ -389,6 +445,7 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     if (tail || cue) out.push({ cue: cue, text: tail });
     return out;
   }
+  function sectionOf(i) { return (slides[i] && slides[i].getAttribute("data-section")) || ""; }
   function titleOf(i) { return (slides[i] && slides[i].getAttribute("data-title")) || ("Slide " + (i + 1)); }
   function spotsOf(i) { return slides[i] ? Array.prototype.map.call(slides[i].querySelectorAll("[data-spot]"), function (e) { return e.getAttribute("data-spot"); }) : []; }
 
@@ -406,14 +463,17 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
       index: index, number: index + 1, total: slides.length, title: titleOf(index),
       notes: notesOf(index), spots: spotsOf(index), captions: captions,
       spotlight: spotTarget ? spotTarget.getAttribute("data-spot") : null,
-      overview: document.body.classList.contains("overview")
+      section: sectionOf(index), checkpoint: !!(slides[index] && slides[index].hasAttribute("data-checkpoint")),
+      overview: document.body.classList.contains("overview"), live: document.body.classList.contains("pz-live")
     };
   }
 
   function render() {
     slides.forEach(function (s, i) { s.classList.toggle("active", i === index); s.setAttribute("aria-hidden", i === index ? "false" : "true"); });
     $("pz-count").textContent = (index + 1) + " / " + slides.length;
-    $("pz-title").textContent = titleOf(index);
+    $("pz-title").innerHTML = "";
+    if (sectionOf(index)) { var tag = document.createElement("span"); tag.className = "section-tag"; tag.textContent = sectionOf(index); $("pz-title").appendChild(tag); }
+    $("pz-title").appendChild(document.createTextNode(titleOf(index)));
     $("pz-progress").style.width = ((index + 1) / slides.length * 100) + "%";
     $("pz-status").textContent = "Slide " + (index + 1) + " of " + slides.length + ": " + titleOf(index);
     document.body.setAttribute("data-slide", String(index + 1));
@@ -461,7 +521,10 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     ensureVisible(el);
     cursorTarget = el; cursorEl.classList.add("on");
     setTimeout(track, MOTION ? 350 : 0); track();
-    if (opts && opts.click) setTimeout(function () { cursorEl.classList.remove("click"); void cursorEl.offsetWidth; cursorEl.classList.add("click"); }, 700);
+    if (opts && opts.click) setTimeout(function () {
+      cursorEl.classList.remove("click"); void cursorEl.offsetWidth; cursorEl.classList.add("click");
+      act(el);
+    }, MOTION ? 700 : 0);
     return state();
   }
   function spotlight(target) {
@@ -522,8 +585,70 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     highlight(li); setTimeout(function () { li.classList.remove("pz-hl"); if (hlTarget === li) hlTarget = null; }, 2500);
     return state();
   }
-  function outline() { return slides.map(function (_, i) { return { number: i + 1, title: titleOf(i), spots: spotsOf(i), notes: notesOf(i) }; }); }
-  function beats(n) { return beatsOf(n === undefined ? index : n - 1); }
+  function outline() {
+    return slides.map(function (_, i) {
+      return { number: i + 1, title: titleOf(i), section: sectionOf(i), checkpoint: slides[i].hasAttribute("data-checkpoint"), spots: spotsOf(i), notes: notesOf(i) };
+    });
+  }
+  // Fetching beats means Claude is presenting: hide [data-reveal] items until revealed.
+  function beats(n) { live(true); return beatsOf(n === undefined ? index : n - 1); }
+  function live(on) { document.body.classList.toggle("pz-live", on !== false); return state(); }
+
+  // ── Demo prototypes ──────────────────────────────────────────────────
+  // A root element carries data-demo-state="value". Inside it, data-when="a b" shows an
+  // element only in those states and data-active-when="a" adds .is-active. Any element
+  // with data-action="root=value[, other=value]" switches state when clicked — by the
+  // user, or by Claude via [[click spot]].
+  function applyDemo(root) {
+    var v = root.getAttribute("data-demo-state") || "";
+    function owns(el) { return el.parentElement && el.parentElement.closest("[data-demo-state]") === root; }
+    root.querySelectorAll("[data-when]").forEach(function (el) {
+      if (owns(el)) el.hidden = el.getAttribute("data-when").split(/\s+/).indexOf(v) < 0;
+    });
+    root.querySelectorAll("[data-active-when]").forEach(function (el) {
+      if (owns(el)) el.classList.toggle("is-active", el.getAttribute("data-active-when").split(/\s+/).indexOf(v) >= 0);
+    });
+  }
+  function setState(target, value) {
+    var el = resolve(target); if (!el) return state();
+    el.setAttribute("data-demo-state", value); applyDemo(el); setTimeout(track, 50);
+    return state();
+  }
+  function act(el) {
+    var a = el && el.getAttribute("data-action"); if (!a) return;
+    a.split(",").forEach(function (pair) { var kv = pair.split("="); if (kv.length === 2) setState(kv[0].trim(), kv[1].trim()); });
+  }
+  function type(target, text) {
+    var el = resolve(target); if (!el) return state();
+    var isField = /^(input|textarea)$/i.test(el.tagName), str = String(text), i = 0;
+    if (!("pzOriginal" in el.dataset)) el.dataset.pzOriginal = isField ? el.value : el.textContent;
+    point(el);
+    (function tick() {
+      i += 1; var part = str.slice(0, i);
+      if (isField) el.value = part; else el.textContent = part;
+      if (i < str.length) setTimeout(tick, MOTION ? 38 : 0);
+    })();
+    return state();
+  }
+  function reveal(target, all) {
+    var root = resolve(target); if (!root) return state();
+    live(true);
+    var items = root.hasAttribute("data-reveal") ? [root] : Array.prototype.slice.call(root.querySelectorAll("[data-reveal]:not(.pz-shown)"));
+    items = items.filter(function (el) { return !el.classList.contains("pz-shown"); });
+    (all ? items : items.slice(0, 1)).forEach(function (el) { el.classList.add("pz-shown"); });
+    if (items[0]) ensureVisible(items[0]);
+    return state();
+  }
+  function reset(n) {
+    var slide = slides[n === undefined ? index : n - 1]; if (!slide) return state();
+    clear();
+    slide.querySelectorAll(".pz-shown").forEach(function (el) { el.classList.remove("pz-shown"); });
+    slide.querySelectorAll("[data-pz-original]").forEach(function (el) {
+      if (/^(input|textarea)$/i.test(el.tagName)) el.value = el.dataset.pzOriginal; else el.textContent = el.dataset.pzOriginal;
+    });
+    slide.querySelectorAll("[data-demo-initial]").forEach(function (el) { setState(el, el.getAttribute("data-demo-initial")); });
+    return state();
+  }
 
   // Tiny command language: "go 3; point flow; spotlight store; caption Hello there; clear"
   function run(script) {
@@ -536,6 +661,11 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
         case "prev": prev(); break;
         case "point": point(arg); break;
         case "click": point(arg, { click: true }); break;
+        case "state": var sp = arg.split(/\s+/); setState(sp[0], sp[1] || ""); break;
+        case "type": var tp = arg.match(/^(\S+)\s+([\s\S]*)$/); if (tp) type(tp[1], tp[2]); break;
+        case "reveal": var rp = arg.split(/\s+/); reveal(rp[0], rp[1] === "all"); break;
+        case "reset": reset(arg ? parseInt(arg, 10) : undefined); break;
+        case "live": live(arg !== "off"); break;
         case "spotlight": spotlight(arg); break;
         case "highlight": highlight(arg); break;
         case "scroll": scrollTo(arg || "bottom"); break;
@@ -553,7 +683,14 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     var h = decodeURIComponent(location.hash.replace(/^#/, "")); if (!h) return;
     var parts = h.split("/");
     if (parts[0]) go(parts[0]);
-    if (parts[1]) { if (parts[2] === "spotlight") spotlight(parts[1]); else if (parts[2] === "highlight") highlight(parts[1]); else point(parts[1]); }
+    if (parts[1]) {
+      var how = parts[2] || "point";
+      if (how === "spotlight") spotlight(parts[1]);
+      else if (how === "highlight") highlight(parts[1]);
+      else if (how === "click") point(parts[1], { click: true });
+      else if (how === "reveal") reveal(parts[1], parts[3] === "all");
+      else point(parts[1]);
+    }
   }
 
   window.addEventListener("hashchange", fromHash);
@@ -572,18 +709,26 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
       case "o": case "O": overview(); break;
     }
   });
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest && e.target.closest("[data-action]");
+    if (el && !el.closest(".pz-bar")) act(el);
+  });
   $("pz-next").addEventListener("click", next);
   $("pz-prev").addEventListener("click", prev);
   $("pz-cc").addEventListener("click", function () { setCaptions(!captions); });
   $("pz-ov").addEventListener("click", function () { overview(); });
 
   window.presenter = {
-    version: "0.1.0",
+    version: "0.2.0",
     go: go, next: next, prev: prev, point: point, spotlight: spotlight, highlight: highlight,
     scrollTo: scrollTo, caption: caption, captions: setCaptions, clear: clear, overview: overview,
-    theme: theme, setHTML: setHTML, append: append, agree: agree, state: state, outline: outline, beats: beats, run: run
+    theme: theme, setHTML: setHTML, append: append, agree: agree, state: state, outline: outline, beats: beats, run: run,
+    setState: setState, type: type, reveal: reveal, reset: reset, live: live
   };
 
+  document.querySelectorAll("[data-demo-state]").forEach(function (root) {
+    root.setAttribute("data-demo-initial", root.getAttribute("data-demo-state")); applyDemo(root);
+  });
   render();
   fromHash();
 })();

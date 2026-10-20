@@ -59,7 +59,7 @@ from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 ELEVENLABS_API = "https://api.elevenlabs.io/v1"
 DEFAULT_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"  # "George" — a stock ElevenLabs voice

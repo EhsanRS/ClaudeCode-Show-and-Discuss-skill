@@ -5,7 +5,9 @@ Usage:  python3 check_deck.py path/to/deck.html [--json]
 
 Checks that every slide has a title and narration notes, that spot names are
 unique, that every [[cue]] in the notes names a known verb and an existing
-spot, and that the page only loads scripts from allowed CDNs. Exit status is
+spot, that demo actions target real demo roots, that the deck has a
+"did I get it right?" checkpoint, and that the page only loads scripts from
+allowed CDNs. Exit status is
 0 when there are no errors (warnings are allowed), 1 otherwise. Standard
 library only, so it runs anywhere Python 3.10+ does.
 """
@@ -20,8 +22,9 @@ from dataclasses import dataclass, field
 from html.parser import HTMLParser
 
 CUE_RE = re.compile(r"\[\[([^\]]+)\]\]")
-SPOT_VERBS = {"point", "click", "spotlight", "highlight"}
-OTHER_VERBS = {"go", "next", "prev", "scroll", "caption", "captions", "clear", "overview", "theme"}
+SPOT_VERBS = {"point", "click", "spotlight", "highlight", "state", "type", "reveal"}
+OTHER_VERBS = {"go", "next", "prev", "scroll", "caption", "captions", "clear", "overview", "theme", "reset", "live"}
+ARG_REQUIRED = {"state": "a value (e.g. [[state app dark]])", "type": "text to type (e.g. [[type email ada@x.org]])"}
 ALLOWED_SCRIPT_HOSTS = (
     "https://cdnjs.cloudflare.com/",
     "https://cdn.jsdelivr.net/npm/",
@@ -30,13 +33,18 @@ ALLOWED_SCRIPT_HOSTS = (
     "https://code.jquery.com/",
 )
 TEMPLATE_TITLE = "Settings Dark Mode"
-REQUIRED_RUNTIME = ("window.presenter", "beats:", "spotlight:", "point:")
+REQUIRED_RUNTIME = ("window.presenter", "beats:", "spotlight:", "point:", "setState:", "reveal:")
 
 
 @dataclass
 class Slide:
     title: str | None
     line: int
+    section: str | None = None
+    checkpoint: bool = False
+    demo_roots: list[str] = field(default_factory=list)
+    actions: list[str] = field(default_factory=list)
+    reveals: int = 0
     notes: str = ""
     spots: list[str] = field(default_factory=list)
 
@@ -61,12 +69,13 @@ class DeckParser(HTMLParser):
         depth = len(self._stack)
         classes = attrs.get("class", "").split()
         if tag == "section" and "slide" in classes and self._slide_depth is None:
-            self.slides.append(Slide(attrs.get("data-title"), self.getpos()[0]))
+            self.slides.append(
+                Slide(attrs.get("data-title"), self.getpos()[0], attrs.get("data-section"), "data-checkpoint" in attrs)
+            )
             self._slide_depth = depth
         elif tag == "aside" and "notes" in classes and self._slide_depth is not None:
             self._notes_depth = depth
-        if "data-spot" in attrs and self.slides and self._slide_depth is not None:
-            self.slides[-1].spots.append(attrs["data-spot"])
+        self._record(attrs)
         if tag == "title":
             self._in_title = True
         if tag == "script":
@@ -76,9 +85,20 @@ class DeckParser(HTMLParser):
                 self._in_script = True
 
     def handle_startendtag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
-        attrs = {k: (v or "") for k, v in attrs_list}
-        if "data-spot" in attrs and self.slides and self._slide_depth is not None:
-            self.slides[-1].spots.append(attrs["data-spot"])
+        self._record({k: (v or "") for k, v in attrs_list})
+
+    def _record(self, attrs: dict[str, str]) -> None:
+        if not self.slides or self._slide_depth is None:
+            return
+        slide = self.slides[-1]
+        if "data-spot" in attrs:
+            slide.spots.append(attrs["data-spot"])
+            if "data-demo-state" in attrs:
+                slide.demo_roots.append(attrs["data-spot"])
+        if attrs.get("data-action"):
+            slide.actions.append(attrs["data-action"])
+        if "data-reveal" in attrs:
+            slide.reveals += 1
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "title":
@@ -130,6 +150,21 @@ def check(html: str) -> dict:
             else:
                 seen[spot] = number
 
+    demo_roots = {root for slide in parser.slides for root in slide.demo_roots}
+    for number, slide in enumerate(parser.slides, start=1):
+        for action in slide.actions:
+            for pair in action.split(","):
+                root, _, value = pair.partition("=")
+                if not value.strip():
+                    errors.append(f"slide {number}: data-action={action!r} must look like 'root=value'")
+                elif root.strip() not in demo_roots:
+                    errors.append(f"slide {number}: data-action targets {root.strip()!r}, which has no data-demo-state")
+
+    if parser.slides and not any(s.checkpoint for s in parser.slides):
+        warnings.append('no checkpoint slide (data-checkpoint) — add a "Did I get it right?" slide after the demo')
+    if parser.slides and not any((s.section or "").lower() == "demo" for s in parser.slides):
+        warnings.append('no slide has data-section="Demo" — lead with a demo of the result')
+
     for number, slide in enumerate(parser.slides, start=1):
         where = f"slide {number} (line {slide.line})"
         if not slide.title:
@@ -146,6 +181,15 @@ def check(html: str) -> dict:
             verb = parts[0].lower() if parts else ""
             arg = parts[1].strip() if len(parts) > 1 else ""
             if verb in SPOT_VERBS:
+                spot = arg.split(None, 1)[0] if arg else ""
+                rest = arg.split(None, 1)[1] if len(arg.split(None, 1)) > 1 else ""
+                if verb == "reveal" and rest not in ("", "all"):
+                    errors.append(f"{where}: cue [[{cue}]] — reveal takes a spot and optionally 'all'")
+                if verb in ARG_REQUIRED and spot and not rest:
+                    errors.append(f"{where}: cue [[{cue}]] needs {ARG_REQUIRED[verb]}")
+                if verb == "state" and spot and spot not in demo_roots:
+                    errors.append(f"{where}: cue [[{cue}]] — {spot!r} has no data-demo-state")
+                arg = spot
                 if not arg:
                     errors.append(f"{where}: cue [[{cue}]] needs a spot name")
                 elif arg not in seen:
@@ -165,7 +209,10 @@ def check(html: str) -> dict:
     return {
         "ok": not errors,
         "title": title,
-        "slides": [{"number": i, "title": s.title, "spots": s.spots} for i, s in enumerate(parser.slides, start=1)],
+        "slides": [
+            {"number": i, "title": s.title, "section": s.section, "checkpoint": s.checkpoint, "spots": s.spots}
+            for i, s in enumerate(parser.slides, start=1)
+        ],
         "errors": errors,
         "warnings": warnings,
     }

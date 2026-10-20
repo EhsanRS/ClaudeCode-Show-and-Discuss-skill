@@ -1,7 +1,7 @@
 {
   "name": "show-and-discuss",
-  "version": "0.1.0",
-  "description": "Present a plan as a narrated walkthrough (artifact + browser pointer + voice) and discuss it before implementation.",
+  "version": "0.2.0",
+  "description": "Demo what Claude will build before building it: clickable mock, browser pointer and voice, with a did-I-get-it-right checkpoint.",
   "author": {
     "name": "EhsanRS",
     "url": "https://github.com/EhsanRS"

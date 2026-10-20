@@ -5,8 +5,10 @@ changes can keep or deliberately revisit those choices.
 
 ## Goals
 
-1. Before implementing, Claude **shows** the plan visually (artifact), **walks
-   through** it (browser, pointer) and **discusses** it (voice, interruptible).
+1. Before implementing, Claude **demos the intended result** (artifact),
+   **walks through** it (browser, pointer) and **discusses** it (voice,
+   interruptible). The aim is to confirm it understood the assignment first,
+   and only then go into technical detail.
 2. Work on every Claude Code surface (CLI, desktop, web), at the best fidelity
    each one allows.
 3. Free and private by default; paid services optional.
@@ -65,7 +67,25 @@ The skill checks for capabilities and picks a mode. It never stops just because
 voice or a browser is missing. The content and the discussion loop matter most;
 voice and pointer make them better.
 
-### D5: An explicit approval gate
+### D5: Demo first, technical second
+Early versions presented the *build plan* (approach, slices, risks). Feedback:
+that tests whether the plan is sound, but not whether Claude understood the
+request, and that is the more common and more expensive failure. The deck is
+therefore structured as Brief → Demo → Checkpoint → Technical:
+
+- The **demo** shows the end result from the user's point of view, using
+  interactive mocks (`data-demo-state`, `data-action`, `[[click]]`, `[[type]]`,
+  `[[reveal]]`) rather than descriptions.
+- The **checkpoint** (`data-checkpoint`) is a hard stop: Claude waits for the
+  user, and if the understanding is wrong, it revises and re-demos instead of
+  continuing.
+- The **technical** section is optional and goes as deep as the user wants.
+
+Mocks are plain HTML with declarative state, so the same demo works when Claude
+drives it, when the user clicks it in a shared link, and through hash URLs
+(`#2/opt-dark/click`) for browser tools without JavaScript.
+
+### D6: An explicit approval gate
 The skill ends by republishing the deck with the agreed decisions and asking
 for a go-ahead. It may *offer* to present when a plan is agreed, but never
 starts presenting, or implementing, on its own.

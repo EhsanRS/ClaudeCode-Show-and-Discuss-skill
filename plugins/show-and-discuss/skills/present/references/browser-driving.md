@@ -4,10 +4,10 @@ The deck exposes `window.presenter`. Every method returns `presenter.state()`,
 so one JavaScript evaluation both acts and reports back:
 
 ```js
-presenter.state()      // {number, total, title, notes, spots, captions, spotlight, overview}
-presenter.outline()    // every slide: {number, title, spots, notes}
+presenter.state()      // {number, total, title, section, checkpoint, notes, spots, captions, spotlight, overview, live}
+presenter.outline()    // every slide: {number, title, section, checkpoint, spots, notes}
 presenter.beats()      // current slide's narration beats: [{cue, text}]  (beats(n) for slide n)
-presenter.go(3)        // or go("Approach") or go("spot-name")
+presenter.go(3)        // or go("How it works") or go("spot-name")
 presenter.next(); presenter.prev()
 presenter.point("store")            // animated pointer
 presenter.point("store", {click: true})
@@ -17,10 +17,14 @@ presenter.scrollTo("bottom")        // "top" | "bottom" | pixels | spot
 presenter.captions(true)            // show the current slide's notes as subtitles
 presenter.caption("Any text")       // show custom subtitle; caption(null) hides
 presenter.agree("Keep scope to Settings only")   // add to the decisions list
+presenter.setState("app", "dark")   // set a demo root's state ([[state app dark]])
+presenter.type("email", "ada@example.org")        // type into a mock field
+presenter.reveal("term")            // show the next hidden data-reveal item; reveal("term", true) = all
+presenter.reset()                   // restore the current slide's demo (states, typed text, reveals)
 presenter.clear()                   // remove pointer/spotlight/highlight
 presenter.overview(true)            // all slides stacked (for reading); false to return
 presenter.theme("dark")             // "light" | "dark" | null (follow system)
-presenter.run("go 4; spotlight theme-choice")    // same verbs as cues, ;-separated
+presenter.run("go 2; click opt-dark")    // same verbs as cues, ;-separated
 ```
 
 ## Which browser tool
@@ -62,9 +66,11 @@ If no JavaScript evaluation is possible, navigate to the same page with a hash:
 | URL suffix | Effect |
 |---|---|
 | `#3` | Go to slide 3 |
-| `#3/store` | Slide 3, pointer on `store` |
-| `#3/flow/spotlight` | Slide 3, spotlight `flow` |
-| `#3/risk-contrast/highlight` | Slide 3, highlight |
+| `#5/store` | Slide 5, pointer on `store` |
+| `#5/flow/spotlight` | Slide 5, spotlight `flow` |
+| `#7/risk-contrast/highlight` | Slide 7, highlight |
+| `#2/opt-dark/click` | Slide 2, click `opt-dark` (runs its demo action) |
+| `#3/devices/reveal` | Slide 3, reveal the next item in `devices` (`/reveal/all` for all) |
 
 Keys: `→`/`Space` next, `←` previous, `Home`/`End`, `C` captions, `O` overview,
 `Esc` clear.
@@ -77,6 +83,8 @@ Keys: `→`/`Space` next, `←` previous, `Home`/`End`, `C` captions, `O` overvi
   which gives the eye time to land before the words start.
 - After the user asks about something specific, `point`/`spotlight` it while
   answering.
+- Demo mocks are live HTML: the user can click them too. If they do, the
+  state they leave it in is what you'll see next; `presenter.reset()` restores it.
 - If the user scrolls or clicks around themselves, call `presenter.state()`
   before the next beat to see where they are. Don't yank them back mid-read;
   ask "Shall I continue from slide N?"

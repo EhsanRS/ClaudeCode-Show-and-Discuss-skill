@@ -3,7 +3,7 @@
 # so `uv run plugins/show-and-discuss/skills/present/scripts/voice.py` just works.
 [project]
 name = "show-and-discuss-dev"
-version = "0.1.0"
+version = "0.2.0"
 description = "Development environment for the show-and-discuss Claude Code plugin"
 requires-python = ">=3.10"
 license = "Apache-2.0"

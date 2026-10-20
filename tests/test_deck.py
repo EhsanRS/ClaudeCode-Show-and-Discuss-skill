@@ -37,7 +37,7 @@ def test_template_has_slide_markers():
 
 
 def test_duplicate_spot_is_an_error():
-    html = template().replace('data-spot="why-tokens"', 'data-spot="why-users"')
+    html = template().replace('data-spot="meaning"', 'data-spot="ask"')
     report = check_deck.check(html)
     assert not report["ok"]
     assert any("duplicates" in e for e in report["errors"])
@@ -90,3 +90,41 @@ def test_manifests_are_consistent():
     import voice
 
     assert plugin["version"] == voice.__version__
+
+
+def test_action_must_target_a_demo_root():
+    report = check_deck.check(template().replace('data-action="app=dark"', 'data-action="nope=dark"'))
+    assert any("'nope', which has no data-demo-state" in e for e in report["errors"])
+
+
+def test_malformed_action_is_an_error():
+    report = check_deck.check(template().replace('data-action="app=dark"', 'data-action="app"'))
+    assert any("must look like 'root=value'" in e for e in report["errors"])
+
+
+def test_state_cue_needs_demo_root_and_value():
+    html = template().replace("[[click opt-dark]]", "[[state ask dark]] [[state app]]")
+    errors = check_deck.check(html)["errors"]
+    assert any("'ask' has no data-demo-state" in e for e in errors)
+    assert any("[[state app]] needs a value" in e for e in errors)
+
+
+def test_type_and_reveal_arguments():
+    html = template().replace("[[click opt-dark]]", "[[type opt-dark]] [[reveal devices twice]]")
+    errors = check_deck.check(html)["errors"]
+    assert any("needs text to type" in e for e in errors)
+    assert any("reveal takes a spot" in e for e in errors)
+
+
+def test_missing_checkpoint_and_demo_are_warnings():
+    html = template().replace(" data-checkpoint", "").replace('data-section="Demo"', 'data-section="Other"')
+    report = check_deck.check(html)
+    assert report["ok"]
+    assert any("checkpoint" in w for w in report["warnings"])
+    assert any('data-section="Demo"' in w for w in report["warnings"])
+
+
+def test_report_includes_sections():
+    slides = check_deck.check(template())["slides"]
+    assert slides[0]["section"] == "Brief"
+    assert [s["number"] for s in slides if s["checkpoint"]] == [4]
