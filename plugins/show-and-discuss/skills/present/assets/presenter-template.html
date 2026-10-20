@@ -124,6 +124,7 @@ th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: up
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
 .card h3 { margin-bottom: .35em; }
 .card p:last-child { margin-bottom: 0; }
+.pz-placeholder { color: var(--muted); font-style: italic; }
 .pill { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
 .pill.ok { background: var(--ok-soft); color: var(--ok); }
 .pill.warn { background: var(--warn-soft); color: var(--warn); }
@@ -327,9 +328,9 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     <li><strong>2. Scope:</strong> Settings only (proposed), or app-wide in one go?</li>
     <li><strong>3. Flag:</strong> ship slice 1 behind a feature flag (proposed)?</li>
   </ul>
-  <div class="card" style="margin-top:20px" data-spot="agreed">
+  <div class="card" style="margin-top:20px">
     <h3>Agreed in this session</h3>
-    <p style="color:var(--muted)">Filled in live as we discuss.</p>
+    <ul class="clean" data-spot="agreed"><li class="pz-placeholder">Filled in live as we discuss.</li></ul>
   </div>
   <aside class="notes">That's the plan. [[spotlight decisions]] I need three decisions from you: the default for new users, whether we keep the scope to Settings, and whether slice one ships behind a flag. Once we agree, I'll update this page with what we decided and start on slice one.</aside>
 </section>
@@ -513,6 +514,14 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
   // Fill an element's content live, e.g. the "Agreed in this session" card.
   function setHTML(target, html) { var el = resolve(target); if (el) el.innerHTML = html; return state(); }
   function append(target, html) { var el = resolve(target); if (el) el.insertAdjacentHTML("beforeend", html); return state(); }
+  // Record a decision on the "agreed" list (escaped text), replacing the placeholder.
+  function agree(text, target) {
+    var el = resolve(target || "agreed"); if (!el) return state();
+    var ph = el.querySelector(".pz-placeholder"); if (ph) ph.remove();
+    var li = document.createElement("li"); li.textContent = String(text); el.appendChild(li);
+    highlight(li); setTimeout(function () { li.classList.remove("pz-hl"); if (hlTarget === li) hlTarget = null; }, 2500);
+    return state();
+  }
   function outline() { return slides.map(function (_, i) { return { number: i + 1, title: titleOf(i), spots: spotsOf(i), notes: notesOf(i) }; }); }
   function beats(n) { return beatsOf(n === undefined ? index : n - 1); }
 
@@ -572,7 +581,7 @@ body.overview .slide > .notes::before { content: "Speaker notes — "; font-weig
     version: "0.1.0",
     go: go, next: next, prev: prev, point: point, spotlight: spotlight, highlight: highlight,
     scrollTo: scrollTo, caption: caption, captions: setCaptions, clear: clear, overview: overview,
-    theme: theme, setHTML: setHTML, append: append, state: state, outline: outline, beats: beats, run: run
+    theme: theme, setHTML: setHTML, append: append, agree: agree, state: state, outline: outline, beats: beats, run: run
   };
 
   render();
