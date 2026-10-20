@@ -1,0 +1,23 @@
+# Development tooling only — the plugin itself needs no build step.
+# The voice helper declares its runtime dependencies inline (PEP 723),
+# so `uv run plugins/show-and-discuss/skills/present/scripts/voice.py` just works.
+[project]
+name = "show-and-discuss-dev"
+version = "0.2.0"
+description = "Development environment for the show-and-discuss Claude Code plugin"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+
+[dependency-groups]
+dev = ["pytest>=8", "numpy>=1.24", "ruff>=0.6"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

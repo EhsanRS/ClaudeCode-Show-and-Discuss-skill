@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Replace with a 2–4 word name for the plan, e.g. "Settings Dark Mode". -->
+<title>Settings Dark Mode</title>
+<style>
+/* ── Design tokens ─────────────────────────────────────────────────────── */
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
+  --text: #1d1c1a;
+  --muted: #6b6760;
+  --border: #e2dfd8;
+  --accent: #c2410c;
+  --accent-soft: #fde7da;
+  --ok: #15803d;
+  --ok-soft: #dcfce7;
+  --warn: #a16207;
+  --warn-soft: #fef3c7;
+  --risk: #b91c1c;
+  --risk-soft: #fee2e2;
+  --code-bg: #1f2328;
+  --code-text: #e6edf3;
+  --scrim: rgba(20, 18, 15, 0.55);
+  --cursor-fill: #111111;
+  --cursor-stroke: #ffffff;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161514;
+    --surface: #1f1e1c;
+    --surface-2: #2a2826;
+    --text: #f2efe9;
+    --muted: #a9a49b;
+    --border: #3a3734;
+    --accent: #fb923c;
+    --accent-soft: #3b2417;
+    --ok: #4ade80;
+    --ok-soft: #13301f;
+    --warn: #facc15;
+    --warn-soft: #33290c;
+    --risk: #f87171;
+    --risk-soft: #3a1717;
+    --code-bg: #0d1117;
+    --scrim: rgba(0, 0, 0, 0.65);
+    --cursor-fill: #ffffff;
+    --cursor-stroke: #111111;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161514;
+  --surface: #1f1e1c;
+  --surface-2: #2a2826;
+  --text: #f2efe9;
+  --muted: #a9a49b;
+  --border: #3a3734;
+  --accent: #fb923c;
+  --accent-soft: #3b2417;
+  --ok: #4ade80;
+  --ok-soft: #13301f;
+  --warn: #facc15;
+  --warn-soft: #33290c;
+  --risk: #f87171;
+  --risk-soft: #3a1717;
+  --code-bg: #0d1117;
+  --scrim: rgba(0, 0, 0, 0.65);
+  --cursor-fill: #ffffff;
+  --cursor-stroke: #111111;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+h1, h2, h3 { line-height: 1.15; margin: 0 0 .5em; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 5vw, 3.4rem); }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2.3rem); }
+h3 { font-size: 1.1rem; }
+p { margin: 0 0 1em; }
+code { font-family: var(--mono); font-size: .9em; background: var(--surface-2); padding: .1em .35em; border-radius: 6px; }
+pre { margin: 0; background: var(--code-bg); color: var(--code-text); padding: 16px; border-radius: var(--radius); overflow-x: auto; font: 13.5px/1.55 var(--mono); }
+pre code { background: none; padding: 0; color: inherit; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+
+/* ── Deck & slides ───────────────────────────────────────────────────── */
+.deck { position: fixed; inset: 0 0 56px 0; }
+.slide {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: clamp(24px, 6vh, 64px) max(16px, calc((100vw - 1040px) / 2));
+  opacity: 0; visibility: hidden; transform: translateY(8px);
+  transition: opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
+  scroll-behavior: smooth;
+}
+.slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .35s ease, transform .35s ease; }
+.slide > .notes { display: none; }
+.kicker { color: var(--accent); font-weight: 600; font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: .6em; }
+.lead { font-size: clamp(1.05rem, 2vw, 1.3rem); color: var(--muted); max-width: 46em; }
+.title-slide { display: flex; flex-direction: column; justify-content: center; min-height: 100%; }
+.meta { color: var(--muted); font-size: .9rem; display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* ── Components ──────────────────────────────────────────────────────── */
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+.card h3 { margin-bottom: .35em; }
+.card p:last-child { margin-bottom: 0; }
+.pz-placeholder { color: var(--muted); font-style: italic; }
+.pill { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.risk { background: var(--risk-soft); color: var(--risk); }
+.pill.accent { background: var(--accent-soft); color: var(--accent); }
+.callout { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; margin: 16px 0; }
+ul.clean { list-style: none; padding: 0; margin: 0; }
+ul.clean li { padding: 8px 0; border-bottom: 1px dashed var(--border); }
+ul.clean li:last-child { border-bottom: 0; }
+
+/* Ordered slices / steps */
+ol.steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 12px; }
+ol.steps > li { counter-increment: step; position: relative; padding: 14px 16px 14px 60px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+ol.steps > li::before { content: counter(step); position: absolute; left: 16px; top: 14px; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: .9rem; }
+ol.steps > li strong { display: block; }
+ol.steps > li span { color: var(--muted); font-size: .92rem; }
+
+/* Before/after comparison */
+.compare { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.compare > div > .label { font-size: .8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+
+/* Mock-up frame: wrap any HTML mock in .mock to get a browser-window chrome. */
+.mock { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+.mock-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.mock-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--border); display: inline-block; }
+.mock-bar .url { margin-left: 10px; flex: 1; background: var(--surface); border-radius: 6px; padding: 3px 10px; font: 12px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mock-body { padding: 20px; }
+
+/* Diagrams: inline SVG uses currentColor + these classes so it themes. */
+svg.diagram { width: 100%; height: auto; display: block; }
+svg.diagram .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+svg.diagram .box.hl { stroke: var(--accent); stroke-width: 2.5; }
+svg.diagram text { fill: var(--text); font: 14px var(--font); }
+svg.diagram .sub { fill: var(--muted); font-size: 12px; }
+svg.diagram .edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+svg.diagram .arrow { fill: var(--muted); }
+
+/* Demo prototypes: data-demo-state on a root, data-when / data-active-when inside, data-action to switch. */
+[data-action] { cursor: pointer; }
+[hidden] { display: none !important; }
+.demo-option { font: inherit; text-align: left; color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: background .3s, border-color .3s, color .3s; }
+.demo-option.is-active { outline: 2px solid var(--accent); outline-offset: 1px; }
+.toast { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 600; font-size: .9rem; }
+/* Terminal / API demo: reveal lines one at a time with [[reveal spot]]. */
+.terminal { background: var(--code-bg); color: var(--code-text); border-radius: var(--radius); padding: 16px 18px; font: 13.5px/1.7 var(--mono); overflow-x: auto; }
+.terminal > div { white-space: pre-wrap; }
+.terminal .cmd::before { content: "$ "; color: #7ee787; }
+.terminal .out { color: #a5b3c2; }
+.terminal .ok { color: #7ee787; }
+.terminal .err { color: #ff7b72; }
+[data-reveal] { transition: opacity .45s ease, transform .45s ease; }
+body.pz-live [data-reveal]:not(.pz-shown) { opacity: 0; visibility: hidden; transform: translateY(6px); }
+.section-tag { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 2px 8px; margin-right: 8px; vertical-align: 2px; }
+
+/* ── Presenter overlay ───────────────────────────────────────────────── */
+#pz-spot {
+  position: fixed; z-index: 40; pointer-events: none; border-radius: 10px;
+  box-shadow: 0 0 0 9999px var(--scrim);
+  outline: 3px solid var(--accent); outline-offset: 2px;
+  opacity: 0; transition: all .45s cubic-bezier(.2,.8,.2,1);
+}
+#pz-spot.on { opacity: 1; }
+.pz-hl { outline: 3px solid var(--accent) !important; outline-offset: 4px; border-radius: 8px; animation: pz-pulse 1.4s ease-in-out infinite; }
+@keyframes pz-pulse { 50% { outline-offset: 8px; outline-color: transparent; } }
+#pz-cursor {
+  position: fixed; z-index: 50; left: 0; top: 0; width: 28px; height: 28px; pointer-events: none;
+  transform: translate(-60px, -60px); transition: transform .7s cubic-bezier(.2,.8,.2,1), opacity .3s;
+  opacity: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35));
+}
+#pz-cursor.on { opacity: 1; }
+#pz-cursor path { fill: var(--cursor-fill); stroke: var(--cursor-stroke); stroke-width: 1.5; }
+#pz-cursor .ripple { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; }
+#pz-cursor.click .ripple { animation: pz-ripple .6s ease-out; }
+@keyframes pz-ripple { from { transform: scale(.3); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
+#pz-caption {
+  position: fixed; z-index: 45; left: 50%; bottom: 72px; transform: translateX(-50%);
+  width: min(880px, calc(100vw - 32px)); padding: 12px 18px; border-radius: var(--radius);
+  background: rgba(17,17,17,.88); color: #fff; font-size: 1rem; line-height: 1.45; text-align: center;
+  opacity: 0; transition: opacity .3s; pointer-events: none;
+}
+#pz-caption.on { opacity: 1; }
+.pz-bar {
+  position: fixed; z-index: 60; left: 0; right: 0; bottom: 0; height: 56px;
+  display: flex; align-items: center; gap: 8px; padding: 0 16px;
+  background: var(--surface); border-top: 1px solid var(--border);
+}
+.pz-bar button {
+  font: inherit; font-size: .9rem; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; min-width: 40px;
+}
+.pz-bar button:hover { border-color: var(--accent); }
+.pz-bar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.pz-bar .count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; white-space: nowrap; }
+.pz-bar .ttl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.pz-progress { position: fixed; z-index: 61; left: 0; bottom: 56px; height: 3px; background: var(--accent); transition: width .35s ease; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Overview mode (press O): every slide stacked — good for reading later. */
+body.overview { overflow: auto; }
+body.overview .deck { position: static; }
+body.overview .slide { position: relative; opacity: 1; visibility: visible; transform: none; overflow: visible; border-bottom: 1px solid var(--border); min-height: 0; }
+body.overview [data-reveal] { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+body.overview .slide > .notes { display: block; margin-top: 20px; padding: 12px 16px; border-radius: var(--radius); background: var(--surface-2); color: var(--muted); font-size: .92rem; }
+body.overview .slide > .notes::before { content: "Speaker notes — "; font-weight: 600; }
+@media print {
+  body { overflow: visible; }
+  .pz-bar, .pz-progress, #pz-cursor, #pz-spot, #pz-caption { display: none !important; }
+  .deck { position: static; }
+  .slide { position: relative; opacity: 1; visibility: visible; transform: none; overflow: visible; page-break-after: always; }
+}
+@media (max-width: 600px) {
+  .pz-bar .ttl { display: none; }
+  #pz-caption { bottom: 68px; font-size: .92rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<main class="deck" id="deck" aria-live="off">
+<!--
+  ══ SLIDES:START ══════════════════════════════════════════════════════════
+  Authoring contract (see references/presentation-format.md):
+    • Demo first: Brief → Demo → Check (data-checkpoint) → Technical (optional).
+    • One <section class="slide" data-title="…" data-section="…"> per slide.
+    • <aside class="notes"> inside each slide = the narration script Claude speaks.
+      Inline cues like [[click opt-dark]] or [[reveal devices]] split it into beats.
+    • data-spot="name" on anything Claude will point at; unique within the deck.
+    • Demos: data-demo-state / data-when / data-active-when / data-action / data-reveal.
+  Everything between SLIDES:START and SLIDES:END is replaced per presentation;
+  the example below demos a small, realistic feature.
+-->
+
+<section class="slide" data-title="What you asked for" data-section="Brief">
+  <div class="title-slide">
+    <div class="kicker">Show &amp; discuss · demo first</div>
+    <h1 data-spot="title">Dark mode for Settings</h1>
+    <p class="lead">Here's what I understood you asked for, then a demo of the result, so you can tell me whether I got it right before any code is written.</p>
+    <div class="grid" style="margin-top:12px">
+      <div class="card" data-spot="ask"><h3>You asked</h3><p>"Let users switch the Settings page between light and dark."</p></div>
+      <div class="card" data-spot="meaning"><h3>I took that to mean</h3><p>A Light / Dark / System choice that applies instantly and is remembered on every device.</p></div>
+      <div class="card" data-spot="scope"><h3>Not included</h3><p>Other pages, custom colours, switching on a schedule.</p></div>
+    </div>
+  </div>
+  <aside class="notes">Thanks for joining. [[spotlight ask]] You asked me to let users switch the Settings page between light and dark. [[spotlight meaning]] I took that to mean a three-way choice, light, dark, or follow the system, that applies instantly and is remembered across devices. [[spotlight scope]] I've left other pages and custom colours out for now. Let me show you what that looks like. Interrupt me any time by just talking.</aside>
+</section>
+
+<section class="slide" data-title="Switching theme" data-section="Demo">
+  <style>
+    .demo-app { transition: background .45s, color .45s; }
+    .demo-app[data-demo-state="dark"] { background: #16181c; color: #e9e7e3; }
+    .demo-app[data-demo-state="dark"] .demo-option { background: #22252b; border-color: #34383f; }
+    .demo-app[data-demo-state="dark"] .muted { color: #9a9a9a; }
+    .demo-app .muted { color: var(--muted); }
+    .demo-app .nav { display: flex; gap: 18px; font-size: .9rem; margin-bottom: 18px; flex-wrap: wrap; }
+    .demo-app .nav b { border-bottom: 2px solid var(--accent); }
+  </style>
+  <div class="kicker">Demo · what you'll get</div>
+  <h2>Pick a theme, see it instantly</h2>
+  <div class="mock">
+    <div class="mock-bar"><i></i><i></i><i></i><span class="url">app.acme.dev/settings/appearance</span></div>
+    <div class="mock-body demo-app" data-spot="app" data-demo-state="light">
+      <div class="nav muted"><span>Profile</span><span>Notifications</span><b>Appearance</b><span>Billing</span></div>
+      <h3>Appearance</h3>
+      <p class="muted">Choose how Acme looks to you.</p>
+      <div class="grid" data-spot="theme-choice">
+        <button type="button" class="demo-option" data-spot="opt-system" data-action="app=system" data-active-when="system"><strong>System</strong><br><span class="muted">Follow your OS setting</span></button>
+        <button type="button" class="demo-option" data-spot="opt-light" data-action="app=light" data-active-when="light"><strong>Light</strong><br><span class="muted">Bright and clear</span></button>
+        <button type="button" class="demo-option" data-spot="opt-dark" data-action="app=dark" data-active-when="dark"><strong>Dark</strong><br><span class="muted">Easier at night</span></button>
+      </div>
+      <p style="margin:16px 0 0" data-when="dark"><span class="toast">✓ Saved · applies on all your devices</span></p>
+      <p style="margin:16px 0 0" class="muted" data-when="system">Following your OS (currently light).</p>
+    </div>
+  </div>
+  <aside class="notes">Here's the Settings page. [[point theme-choice]] Under Appearance there are three choices. [[click opt-dark]] Pick Dark, and the page switches straight away, with no reload and no save button. [[click opt-system]] Pick System, and it follows whatever your operating system is set to. [[click opt-light]] And Light takes you back.</aside>
+</section>
+
+<section class="slide" data-title="It remembers" data-section="Demo">
+  <div class="kicker">Demo · what you'll get</div>
+  <h2>Your choice follows you</h2>
+  <div data-spot="devices">
+  <div class="compare">
+    <div data-spot="laptop">
+      <div class="label">Laptop: you choose Dark</div>
+      <div class="mock"><div class="mock-bar"><i></i><i></i><i></i><span class="url">settings/appearance</span></div>
+        <div class="mock-body" style="background:#16181c;color:#e9e7e3"><strong>Appearance</strong><p style="color:#9a9a9a;margin:4px 0 0">Dark ✓</p></div></div>
+    </div>
+    <div data-reveal data-spot="phone">
+      <div class="label">Phone: next time you open the app</div>
+      <div class="mock"><div class="mock-bar"><i></i><i></i><i></i><span class="url">acme app</span></div>
+        <div class="mock-body" style="background:#16181c;color:#e9e7e3"><strong>Home</strong><p style="color:#9a9a9a;margin:4px 0 0">Already dark. Nothing to set.</p></div></div>
+    </div>
+  </div>
+  <div class="callout" data-reveal data-spot="no-flash-demo"><strong>No white flash:</strong> pages load in your theme from the very first frame.</div>
+  </div>
+  <aside class="notes">It also remembers. [[spotlight laptop]] Choose Dark on your laptop, [[reveal devices]] and the next time you open the app on your phone, it's already dark. [[reveal devices]] And pages load in your theme from the very first frame, so there's no flash of white.</aside>
+</section>
+
+<section class="slide" data-title="Did I get it right?" data-section="Check" data-checkpoint>
+  <div class="kicker">Checkpoint</div>
+  <h2>Did I understand the assignment?</h2>
+  <div class="grid">
+    <div class="card" data-spot="will"><h3>I'll build</h3><ul class="clean"><li>Light / Dark / System choice in Settings</li><li>Instant switch, no reload</li><li>Remembered across devices</li></ul></div>
+    <div class="card" data-spot="wont"><h3>I won't build (yet)</h3><ul class="clean"><li>Dark mode on other pages</li><li>Custom colours</li><li>Scheduled switching</li></ul></div>
+    <div class="card" data-spot="assumptions"><h3>Assumptions</h3><ul class="clean"><li>Existing users stay on Light</li><li>New users default to System</li><li>Sync uses the existing profile settings</li></ul></div>
+  </div>
+  <aside class="notes">That's the result I'm aiming for. [[spotlight assumptions]] I made three assumptions: existing users stay on Light, new users default to System, and the choice syncs through your existing profile settings. [[clear]] Before I go into how I'd build it: did I understand the assignment? Is anything missing or wrong?</aside>
+</section>
+
+<section class="slide" data-title="How it works" data-section="Technical">
+  <div class="kicker">Under the hood</div>
+  <h2>How it works</h2>
+  <svg class="diagram" viewBox="0 0 760 200" role="img" aria-label="Preference flows from the toggle to storage, then to the theme attribute on the root element, which switches token values." data-spot="flow">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+    <rect class="box" x="10" y="60" width="160" height="70" rx="10"/><text x="90" y="92" text-anchor="middle">Theme toggle</text><text class="sub" x="90" y="112" text-anchor="middle">Settings › Appearance</text>
+    <rect class="box hl" x="210" y="60" width="160" height="70" rx="10" data-spot="store"/><text x="290" y="92" text-anchor="middle">usePreference()</text><text class="sub" x="290" y="112" text-anchor="middle">localStorage + API</text>
+    <rect class="box" x="410" y="60" width="160" height="70" rx="10"/><text x="490" y="92" text-anchor="middle">&lt;html data-theme&gt;</text><text class="sub" x="490" y="112" text-anchor="middle">set before paint</text>
+    <rect class="box" x="610" y="60" width="140" height="70" rx="10"/><text x="680" y="92" text-anchor="middle">tokens.css</text><text class="sub" x="680" y="112" text-anchor="middle">dark values</text>
+    <path class="edge" d="M170 95 H205" marker-end="url(#ah)"/><path class="edge" d="M370 95 H405" marker-end="url(#ah)"/><path class="edge" d="M570 95 H605" marker-end="url(#ah)"/>
+  </svg>
+  <div class="callout" data-spot="no-flash"><strong>No flash of the wrong theme:</strong> a 6-line inline script in <code>&lt;head&gt;</code> sets <code>data-theme</code> before first paint.</div>
+  <aside class="notes">Here's how it fits together. [[spotlight flow]] The toggle writes the preference through a small hook, [[point store]] which saves it locally and syncs it to the user's profile. The value lands on the page as a theme attribute, and our existing colour tokens switch from there. [[spotlight no-flash]] A tiny script in the page head applies the theme before first paint. That's what prevents the white flash you saw in the demo.</aside>
+</section>
+
+<section class="slide" data-title="Slices" data-section="Technical">
+  <div class="kicker">Delivery</div>
+  <h2>Three slices, each shippable</h2>
+  <ol class="steps">
+    <li data-spot="slice-1"><strong>Dark token values + head script</strong><span>Add dark values to tokens.css; inline script sets data-theme. Behind a flag. Tests: snapshot both themes.</span></li>
+    <li data-spot="slice-2"><strong>Appearance setting UI</strong><span>The three-way control and usePreference hook with localStorage. Tests: unit + one e2e toggle test.</span></li>
+    <li data-spot="slice-3"><strong>Sync to profile</strong><span>Persist the choice via the existing preferences API so it follows the user across devices.</span></li>
+  </ol>
+  <aside class="notes">I'd deliver it in three slices, each shippable on its own. [[point slice-1]] First the dark colours and the head script, behind a flag. [[point slice-2]] Then the setting you saw in the demo. [[point slice-3]] Then syncing across devices. After each slice I'll run the tests and show you the result.</aside>
+</section>
+
+<section class="slide" data-title="Risks" data-section="Technical">
+  <div class="kicker">Risks &amp; open questions</div>
+  <h2>What could go wrong</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Level</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr data-spot="risk-colours"><td>Some hard-coded colours bypass tokens</td><td><span class="pill warn">medium</span></td><td>Grep for hex values in Settings; fix the ~10 hits in slice 1.</td></tr>
+      <tr><td>Third-party embeds stay light</td><td><span class="pill ok">low</span></td><td>Accept for now; note in release notes.</td></tr>
+      <tr data-spot="risk-contrast"><td>Contrast regressions</td><td><span class="pill risk">high</span></td><td>Run axe contrast checks on both themes in CI.</td></tr>
+    </tbody>
+  </table>
+  <aside class="notes">[[highlight risk-colours]] The main risk is colours that are hard-coded rather than using tokens. I found about ten in the Settings code and will fix them in slice one. [[highlight risk-contrast]] The most serious is contrast, so I'll add automated contrast checks for both themes.</aside>
+</section>
+
+<section class="slide" data-title="Decisions" data-section="Technical">
+  <div class="kicker">Your call</div>
+  <h2>Decisions I need from you</h2>
+  <ul class="clean" data-spot="decisions">
+    <li><strong>1. Default for new users:</strong> System (proposed) or Light?</li>
+    <li><strong>2. Scope:</strong> Settings only (proposed), or app-wide in one go?</li>
+    <li><strong>3. Flag:</strong> ship slice 1 behind a feature flag (proposed)?</li>
+  </ul>
+  <div class="card" style="margin-top:20px">
+    <h3>Agreed in this session</h3>
+    <ul class="clean" data-spot="agreed"><li class="pz-placeholder">Filled in live as we discuss.</li></ul>
+  </div>
+  <aside class="notes">That's everything. [[spotlight decisions]] I need three decisions from you: the default for new users, whether we keep the scope to Settings, and whether slice one ships behind a flag. Once we agree, I'll update this page with what we decided and start on slice one.</aside>
+</section>
+
+<!-- ══ SLIDES:END ══════════════════════════════════════════════════════ -->
+</main>
+
+<div id="pz-spot" aria-hidden="true"></div>
+<div id="pz-cursor" aria-hidden="true">
+  <svg viewBox="0 0 28 28" width="28" height="28"><path d="M4 2 L4 22 L9.5 17 L13 25.5 L16.5 24 L13 15.8 L20.5 15.8 Z"/></svg>
+  <span class="ripple"></span>
+</div>
+<div id="pz-caption" role="status" aria-live="polite"></div>
+<div class="pz-progress" id="pz-progress"></div>
+<nav class="pz-bar" aria-label="Presentation controls">
+  <button type="button" id="pz-prev" aria-label="Previous slide">‹</button>
+  <button type="button" id="pz-next" aria-label="Next slide">›</button>
+  <span class="count" id="pz-count">1 / 1</span>
+  <span class="ttl" id="pz-title"></span>
+  <button type="button" id="pz-cc" aria-pressed="false" title="Captions (C)">CC</button>
+  <button type="button" id="pz-ov" aria-pressed="false" title="Overview (O)">Overview</button>
+</nav>
+<div class="sr-only" id="pz-status" aria-live="polite"></div>
+
+<script>
+/*
+ * Presenter runtime. Exposes window.presenter for the browser tool to drive.
+ * Every method is synchronous-safe and returns presenter.state() so a single
+ * evaluate call both acts and reports back. Commands can also arrive via:
+ *   • URL hash   #3  |  #3/spot-name  |  #3/spot-name/spotlight
+ *   • postMessage({ presenter: "go 3; point spot-name" })
+ *   • presenter.run("go 3; spotlight flow; caption Hello")
+ */
+(function () {
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".deck > .slide"));
+  var $ = function (id) { return document.getElementById(id); };
+  var spotEl = $("pz-spot"), cursorEl = $("pz-cursor"), captionEl = $("pz-caption");
+  var index = 0, captions = false, spotTarget = null, cursorTarget = null, hlTarget = null;
+  var MOTION = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function clamp(n) { return Math.max(0, Math.min(slides.length - 1, n)); }
+  var CUE = /\[\[([^\]]+)\]\]/g;
+  function rawNotes(i) { var n = slides[i] && slides[i].querySelector(".notes"); return n ? n.textContent.trim().replace(/\s+/g, " ") : ""; }
+  function notesOf(i) { return rawNotes(i).replace(CUE, "").replace(/\s+/g, " ").trim(); }
+  // Split narration into beats: [{cue: "point store" | null, text: "…"}]. A cue runs, then its text is spoken.
+  function beatsOf(i) {
+    var raw = rawNotes(i), out = [], cue = null, last = 0, m;
+    CUE.lastIndex = 0;
+    while ((m = CUE.exec(raw))) {
+      var t = raw.slice(last, m.index).trim();
+      if (t || cue) out.push({ cue: cue, text: t });
+      cue = m[1].trim(); last = CUE.lastIndex;
+    }
+    var tail = raw.slice(last).trim();
+    if (tail || cue) out.push({ cue: cue, text: tail });
+    return out;
+  }
+  function sectionOf(i) { return (slides[i] && slides[i].getAttribute("data-section")) || ""; }
+  function titleOf(i) { return (slides[i] && slides[i].getAttribute("data-title")) || ("Slide " + (i + 1)); }
+  function spotsOf(i) { return slides[i] ? Array.prototype.map.call(slides[i].querySelectorAll("[data-spot]"), function (e) { return e.getAttribute("data-spot"); }) : []; }
+
+  function resolve(target) {
+    if (!target) return null;
+    if (target instanceof Element) return target;
+    var el = document.querySelector('[data-spot="' + String(target).replace(/"/g, '\\"') + '"]');
+    if (!el) { try { el = document.querySelector(target); } catch (e) { el = null; } }
+    return el;
+  }
+  function slideIndexOf(el) { var s = el && el.closest(".slide"); return s ? slides.indexOf(s) : -1; }
+
+  function state() {
+    return {
+      index: index, number: index + 1, total: slides.length, title: titleOf(index),
+      notes: notesOf(index), spots: spotsOf(index), captions: captions,
+      spotlight: spotTarget ? spotTarget.getAttribute("data-spot") : null,
+      section: sectionOf(index), checkpoint: !!(slides[index] && slides[index].hasAttribute("data-checkpoint")),
+      overview: document.body.classList.contains("overview"), live: document.body.classList.contains("pz-live")
+    };
+  }
+
+  function render() {
+    slides.forEach(function (s, i) { s.classList.toggle("active", i === index); s.setAttribute("aria-hidden", i === index ? "false" : "true"); });
+    $("pz-count").textContent = (index + 1) + " / " + slides.length;
+    $("pz-title").innerHTML = "";
+    if (sectionOf(index)) { var tag = document.createElement("span"); tag.className = "section-tag"; tag.textContent = sectionOf(index); $("pz-title").appendChild(tag); }
+    $("pz-title").appendChild(document.createTextNode(titleOf(index)));
+    $("pz-progress").style.width = ((index + 1) / slides.length * 100) + "%";
+    $("pz-status").textContent = "Slide " + (index + 1) + " of " + slides.length + ": " + titleOf(index);
+    document.body.setAttribute("data-slide", String(index + 1));
+    if (captions) caption(notesOf(index), true);
+  }
+
+  function go(n) {
+    var i = typeof n === "number" ? n - 1 : -1;
+    if (typeof n === "string") {
+      if (/^\d+$/.test(n)) i = parseInt(n, 10) - 1;
+      else { var el = resolve(n); i = slideIndexOf(el); if (i < 0) i = slides.findIndex(function (_, k) { return titleOf(k).toLowerCase() === n.toLowerCase(); }); }
+    }
+    if (i < 0) return state();
+    clear();
+    index = clamp(i);
+    slides[index].scrollTop = 0;
+    render();
+    return state();
+  }
+  function next() { return go(index + 2); }
+  function prev() { return go(index); }
+
+  function ensureVisible(el) {
+    var i = slideIndexOf(el);
+    if (i >= 0 && i !== index && !document.body.classList.contains("overview")) { index = i; render(); }
+    el.scrollIntoView({ behavior: MOTION ? "smooth" : "auto", block: "center", inline: "nearest" });
+  }
+
+  function placeSpot() {
+    if (!spotTarget) return;
+    var r = spotTarget.getBoundingClientRect(), pad = 8;
+    spotEl.style.left = (r.left - pad) + "px"; spotEl.style.top = (r.top - pad) + "px";
+    spotEl.style.width = (r.width + pad * 2) + "px"; spotEl.style.height = (r.height + pad * 2) + "px";
+  }
+  function placeCursor() {
+    if (!cursorTarget) return;
+    var r = cursorTarget.getBoundingClientRect();
+    var x = r.left + Math.min(r.width * 0.5, r.width - 6), y = r.top + Math.min(r.height * 0.6, r.height - 4);
+    cursorEl.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+  }
+  function track() { placeSpot(); placeCursor(); }
+
+  function point(target, opts) {
+    var el = resolve(target); if (!el) return state();
+    ensureVisible(el);
+    cursorTarget = el; cursorEl.classList.add("on");
+    setTimeout(track, MOTION ? 350 : 0); track();
+    if (opts && opts.click) setTimeout(function () {
+      cursorEl.classList.remove("click"); void cursorEl.offsetWidth; cursorEl.classList.add("click");
+      act(el);
+    }, MOTION ? 700 : 0);
+    return state();
+  }
+  function spotlight(target) {
+    var el = resolve(target); if (!el) return state();
+    ensureVisible(el);
+    spotTarget = el; spotEl.classList.add("on");
+    setTimeout(placeSpot, MOTION ? 350 : 0); placeSpot();
+    return state();
+  }
+  function highlight(target) {
+    var el = resolve(target); if (!el) return state();
+    if (hlTarget) hlTarget.classList.remove("pz-hl");
+    ensureVisible(el); hlTarget = el; el.classList.add("pz-hl");
+    return state();
+  }
+  function scrollTo(target) {
+    var s = slides[index];
+    if (target === "top") s.scrollTo({ top: 0, behavior: MOTION ? "smooth" : "auto" });
+    else if (target === "bottom") s.scrollTo({ top: s.scrollHeight, behavior: MOTION ? "smooth" : "auto" });
+    else if (typeof target === "number" || /^-?\d+$/.test(String(target))) s.scrollBy({ top: Number(target), behavior: MOTION ? "smooth" : "auto" });
+    else { var el = resolve(target); if (el) ensureVisible(el); }
+    return state();
+  }
+  function caption(text, keep) {
+    if (text === null || text === undefined || text === "") { captionEl.classList.remove("on"); if (!keep) captionEl.textContent = ""; }
+    else { captionEl.textContent = String(text); captionEl.classList.add("on"); }
+    return state();
+  }
+  function setCaptions(on) {
+    captions = !!on; $("pz-cc").setAttribute("aria-pressed", String(captions));
+    caption(captions ? notesOf(index) : null);
+    return state();
+  }
+  function clear() {
+    spotTarget = null; spotEl.classList.remove("on");
+    cursorTarget = null; cursorEl.classList.remove("on");
+    if (hlTarget) { hlTarget.classList.remove("pz-hl"); hlTarget = null; }
+    return state();
+  }
+  function overview(on) {
+    var v = on === undefined ? !document.body.classList.contains("overview") : !!on;
+    clear(); document.body.classList.toggle("overview", v); $("pz-ov").setAttribute("aria-pressed", String(v));
+    return state();
+  }
+  function theme(t) {
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    else document.documentElement.removeAttribute("data-theme");
+    return state();
+  }
+  // Fill an element's content live, e.g. the "Agreed in this session" card.
+  function setHTML(target, html) { var el = resolve(target); if (el) el.innerHTML = html; return state(); }
+  function append(target, html) { var el = resolve(target); if (el) el.insertAdjacentHTML("beforeend", html); return state(); }
+  // Record a decision on the "agreed" list (escaped text), replacing the placeholder.
+  function agree(text, target) {
+    var el = resolve(target || "agreed"); if (!el) return state();
+    var ph = el.querySelector(".pz-placeholder"); if (ph) ph.remove();
+    var li = document.createElement("li"); li.textContent = String(text); el.appendChild(li);
+    highlight(li); setTimeout(function () { li.classList.remove("pz-hl"); if (hlTarget === li) hlTarget = null; }, 2500);
+    return state();
+  }
+  function outline() {
+    return slides.map(function (_, i) {
+      return { number: i + 1, title: titleOf(i), section: sectionOf(i), checkpoint: slides[i].hasAttribute("data-checkpoint"), spots: spotsOf(i), notes: notesOf(i) };
+    });
+  }
+  // Fetching beats means Claude is presenting: hide [data-reveal] items until revealed.
+  function beats(n) { live(true); return beatsOf(n === undefined ? index : n - 1); }
+  function live(on) { document.body.classList.toggle("pz-live", on !== false); return state(); }
+
+  // ── Demo prototypes ──────────────────────────────────────────────────
+  // A root element carries data-demo-state="value". Inside it, data-when="a b" shows an
+  // element only in those states and data-active-when="a" adds .is-active. Any element
+  // with data-action="root=value[, other=value]" switches state when clicked — by the
+  // user, or by Claude via [[click spot]].
+  function applyDemo(root) {
+    var v = root.getAttribute("data-demo-state") || "";
+    function owns(el) { return el.parentElement && el.parentElement.closest("[data-demo-state]") === root; }
+    root.querySelectorAll("[data-when]").forEach(function (el) {
+      if (owns(el)) el.hidden = el.getAttribute("data-when").split(/\s+/).indexOf(v) < 0;
+    });
+    root.querySelectorAll("[data-active-when]").forEach(function (el) {
+      if (owns(el)) el.classList.toggle("is-active", el.getAttribute("data-active-when").split(/\s+/).indexOf(v) >= 0);
+    });
+  }
+  function setState(target, value) {
+    var el = resolve(target); if (!el) return state();
+    el.setAttribute("data-demo-state", value); applyDemo(el); setTimeout(track, 50);
+    return state();
+  }
+  function act(el) {
+    var a = el && el.getAttribute("data-action"); if (!a) return;
+    a.split(",").forEach(function (pair) { var kv = pair.split("="); if (kv.length === 2) setState(kv[0].trim(), kv[1].trim()); });
+  }
+  function type(target, text) {
+    var el = resolve(target); if (!el) return state();
+    var isField = /^(input|textarea)$/i.test(el.tagName), str = String(text), i = 0;
+    if (!("pzOriginal" in el.dataset)) el.dataset.pzOriginal = isField ? el.value : el.textContent;
+    point(el);
+    (function tick() {
+      i += 1; var part = str.slice(0, i);
+      if (isField) el.value = part; else el.textContent = part;
+      if (i < str.length) setTimeout(tick, MOTION ? 38 : 0);
+    })();
+    return state();
+  }
+  function reveal(target, all) {
+    var root = resolve(target); if (!root) return state();
+    live(true);
+    var items = root.hasAttribute("data-reveal") ? [root] : Array.prototype.slice.call(root.querySelectorAll("[data-reveal]:not(.pz-shown)"));
+    items = items.filter(function (el) { return !el.classList.contains("pz-shown"); });
+    (all ? items : items.slice(0, 1)).forEach(function (el) { el.classList.add("pz-shown"); });
+    if (items[0]) ensureVisible(items[0]);
+    return state();
+  }
+  function reset(n) {
+    var slide = slides[n === undefined ? index : n - 1]; if (!slide) return state();
+    clear();
+    slide.querySelectorAll(".pz-shown").forEach(function (el) { el.classList.remove("pz-shown"); });
+    slide.querySelectorAll("[data-pz-original]").forEach(function (el) {
+      if (/^(input|textarea)$/i.test(el.tagName)) el.value = el.dataset.pzOriginal; else el.textContent = el.dataset.pzOriginal;
+    });
+    slide.querySelectorAll("[data-demo-initial]").forEach(function (el) { setState(el, el.getAttribute("data-demo-initial")); });
+    return state();
+  }
+
+  // Tiny command language: "go 3; point flow; spotlight store; caption Hello there; clear"
+  function run(script) {
+    String(script).split(";").forEach(function (cmd) {
+      var m = cmd.trim().match(/^(\w+)\s*(.*)$/); if (!m) return;
+      var verb = m[1].toLowerCase(), arg = m[2].trim();
+      switch (verb) {
+        case "go": go(arg); break;
+        case "next": next(); break;
+        case "prev": prev(); break;
+        case "point": point(arg); break;
+        case "click": point(arg, { click: true }); break;
+        case "state": var sp = arg.split(/\s+/); setState(sp[0], sp[1] || ""); break;
+        case "type": var tp = arg.match(/^(\S+)\s+([\s\S]*)$/); if (tp) type(tp[1], tp[2]); break;
+        case "reveal": var rp = arg.split(/\s+/); reveal(rp[0], rp[1] === "all"); break;
+        case "reset": reset(arg ? parseInt(arg, 10) : undefined); break;
+        case "live": live(arg !== "off"); break;
+        case "spotlight": spotlight(arg); break;
+        case "highlight": highlight(arg); break;
+        case "scroll": scrollTo(arg || "bottom"); break;
+        case "caption": caption(arg || null); break;
+        case "captions": setCaptions(arg !== "off"); break;
+        case "clear": clear(); break;
+        case "overview": overview(arg ? arg !== "off" : undefined); break;
+        case "theme": theme(arg); break;
+      }
+    });
+    return state();
+  }
+
+  function fromHash() {
+    var h = decodeURIComponent(location.hash.replace(/^#/, "")); if (!h) return;
+    var parts = h.split("/");
+    if (parts[0]) go(parts[0]);
+    if (parts[1]) {
+      var how = parts[2] || "point";
+      if (how === "spotlight") spotlight(parts[1]);
+      else if (how === "highlight") highlight(parts[1]);
+      else if (how === "click") point(parts[1], { click: true });
+      else if (how === "reveal") reveal(parts[1], parts[3] === "all");
+      else point(parts[1]);
+    }
+  }
+
+  window.addEventListener("hashchange", fromHash);
+  window.addEventListener("message", function (e) { if (e.data && typeof e.data.presenter === "string") run(e.data.presenter); });
+  window.addEventListener("resize", track);
+  document.addEventListener("scroll", track, true);
+  document.addEventListener("keydown", function (e) {
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    switch (e.key) {
+      case "ArrowRight": case "PageDown": case " ": e.preventDefault(); next(); break;
+      case "ArrowLeft": case "PageUp": e.preventDefault(); prev(); break;
+      case "Home": go(1); break;
+      case "End": go(slides.length); break;
+      case "Escape": clear(); break;
+      case "c": case "C": setCaptions(!captions); break;
+      case "o": case "O": overview(); break;
+    }
+  });
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest && e.target.closest("[data-action]");
+    if (el && !el.closest(".pz-bar")) act(el);
+  });
+  $("pz-next").addEventListener("click", next);
+  $("pz-prev").addEventListener("click", prev);
+  $("pz-cc").addEventListener("click", function () { setCaptions(!captions); });
+  $("pz-ov").addEventListener("click", function () { overview(); });
+
+  window.presenter = {
+    version: "0.2.0",
+    go: go, next: next, prev: prev, point: point, spotlight: spotlight, highlight: highlight,
+    scrollTo: scrollTo, caption: caption, captions: setCaptions, clear: clear, overview: overview,
+    theme: theme, setHTML: setHTML, append: append, agree: agree, state: state, outline: outline, beats: beats, run: run,
+    setState: setState, type: type, reveal: reveal, reset: reset, live: live
+  };
+
+  document.querySelectorAll("[data-demo-state]").forEach(function (root) {
+    root.setAttribute("data-demo-initial", root.getAttribute("data-demo-state")); applyDemo(root);
+  });
+  render();
+  fromHash();
+})();
+</script>
+</body>
+</html>

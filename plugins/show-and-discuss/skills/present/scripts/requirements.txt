@@ -1,0 +1,4 @@
+# Only needed if you run voice.py with plain `python3` instead of `uv run`.
+numpy>=1.24
+sounddevice>=0.4.6
+faster-whisper>=1.0
